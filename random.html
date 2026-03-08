@@ -6,52 +6,62 @@
 <title>StreamTalk Random Chat</title>
 <style>
 body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:12px;}
-.chat-box{background:#1c1f2e;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
 textarea{flex:1;border:none;outline:none;border-radius:12px;padding:8px;background:#2a2f45;color:white;resize:none;}
 button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;margin-top:4px;}
+.chat-box,.profile-card,.owner-panel,.log-panel{background:#1c1f2e;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
 .message{padding:6px 10px;border-radius:12px;margin:4px 0;}
 .me{background:#7c3aed;color:white;}
 .other{background:#2a2f45;color:white;}
 .system{text-align:center;color:#aaa;margin:4px 0;}
-#loginModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;flex-direction:column;gap:10px;z-index:999;}
-#loginModal input{padding:8px;border-radius:8px;border:none;outline:none;background:#2a2f45;color:white;width:200px;}
-#loginModal button{padding:8px;border-radius:8px;}
-#ownerMenu{display:none;background:#1a1d2e;padding:10px;border-radius:12px;max-height:200px;overflow-y:auto;flex-direction:column;gap:4px;}
-#liveLogs{display:none;background:#1a1d2e;padding:8px;border-radius:12px;max-height:150px;overflow-y:auto;font-size:12px;color:#cfd3ff;}
-#logsContent{overflow-y:auto;}
-#copyLogs{align-self:flex-end;padding:4px 6px;border-radius:6px;background:#7c3aed;color:white;margin-bottom:4px;}
+.profile-card{cursor:pointer;flex-direction:row;align-items:center;gap:8px;}
+.profile-card img{width:40px;height:40px;border-radius:50%;}
+.banned{opacity:.4;filter:grayscale(1);}
+#ownerPanel,#logPanel,#profilesContainer{display:none;}
 </style>
 </head>
 <body>
 
-<h1>StreamTalk Chat</h1>
+<h1>StreamTalk</h1>
+
+<!-- Login -->
+<div id="loginDiv">
+<input id="username" placeholder="Username (with emoji)" style="padding:6px;border-radius:8px;border:none;background:#2a2f45;color:white;">
+<input type="password" id="password" placeholder="Password" style="padding:6px;border-radius:8px;border:none;background:#2a2f45;color:white;">
+<button id="loginBtn">Login / Register</button>
+<div id="loginMsg" class="system"></div>
+</div>
+
+<!-- Profiles -->
+<div id="profilesContainer"></div>
+
+<!-- Chat -->
 <div class="chat-box" id="messages"></div>
 <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
 <button id="send">Send</button>
 <button id="skip">Skip</button>
 <button id="report">Report</button>
-<button id="download">Download Logs</button>
 
-<!-- Login Modal -->
-<div id="loginModal">
-  <input id="nickname" placeholder="Enter nickname (emoji allowed)">
-  <button id="loginBtn">Join Chat</button>
-  <div id="loginMsg" style="color:#f77;"></div>
+<!-- Owner / Debug -->
+<div id="ownerPanel" class="owner-panel">
+<button onclick="toggleOwner()">Hide/Show Owner</button>
+<button onclick="ownerBan()">Ban User</button>
+<button onclick="ownerTimeout()">Timeout</button>
+<button onclick="ownerCopyLogs()">Copy Logs</button>
+<button onclick="ownerClearLogs()">Clear Logs</button>
+<button onclick="ownerSelfChat()">Self-Test Chat</button>
 </div>
 
-<!-- Owner Menu -->
-<div id="ownerMenu">
-  <button onclick="alert('Owner: Ban User')">Ban</button>
-  <button onclick="alert('Owner: Timeout 30s')">Timeout 30s</button>
-  <button onclick="alert('Owner: Add Moderator')">Add Moderator</button>
-  <button onclick="alert('Owner: Mute User')">Mute</button>
+<!-- Logs -->
+<div id="logPanel" class="log-panel">
+<button onclick="toggleLogs()">Hide/Show Logs</button>
+<div id="logsContent"></div>
 </div>
 
-<!-- Live Logs Panel -->
-<div id="liveLogs">
-  <button id="copyLogs">Copy All Logs</button>
-  <div id="logsContent"></div>
-</div>
+<footer>
+<a href="rules.html" target="_blank">Rules</a> •
+<a href="privacy.html" target="_blank">Privacy</a> •
+<a href="terms.html" target="_blank">Terms</a>
+</footer>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -60,56 +70,65 @@ button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90d
 const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamtalk-fcfd5.firebaseapp.com",databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",projectId:"streamtalk-fcfd5",storageBucket:"streamtalk-fcfd5.firebasestorage.app",messagingSenderId:"971872258888",appId:"1:971872258888:web:316fe78c5b762611d7c17d"};
 firebase.initializeApp(cfg);const db=firebase.database();
 
-// --- UI ---
-const msgBox=document.getElementById("messages"),input=document.getElementById("msg");
-const sendBtn=document.getElementById("send"),skipBtn=document.getElementById("skip");
-const reportBtn=document.getElementById("report"),downloadBtn=document.getElementById("download");
-const loginModal=document.getElementById("loginModal"),loginBtn=document.getElementById("loginBtn");
-const nicknameInput=document.getElementById("nickname"),loginMsg=document.getElementById("loginMsg");
-const ownerMenu=document.getElementById("ownerMenu");
-const liveLogs=document.getElementById("liveLogs"),logsContent=document.getElementById("logsContent"),copyLogs=document.getElementById("copyLogs");
+// --- Globals ---
+let uid=null,room=null,partner=null,logs=[],mods=[];
+const badWords=["fag","faggot","nigger"];
+const $=(id)=>document.getElementById(id);
 
-// --- Logs ---
-let logs=[],uid=null,room=null,partner=null;
+// --- UI ---
+const msgBox=$("messages"),input=$("msg"),profiles=$("profilesContainer");
+const loginDiv=$("loginDiv"),username=$("username"),password=$("password"),loginBtn=$("loginBtn"),loginMsg=$("loginMsg");
+const ownerPanel=$("ownerPanel"),logPanel=$("logPanel"),logsContent=$("logsContent");
 
 // --- Helpers ---
 function addSys(t){let d=document.createElement("div");d.className="system";d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push("[SYS] "+t);refreshLogs();}
 function addMsg(t,type){let d=document.createElement("div");d.className=type;d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push(`[${type}] ${t}`);refreshLogs();}
 function refreshLogs(){logsContent.innerHTML=logs.map(l=>`<div>${l}</div>`).join("");logsContent.scrollTop=logsContent.scrollHeight;}
-function filterText(t){const bad=["fag","faggot","nigger"];return bad.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
-function getDeviceInfo(){return {ua:navigator.userAgent,screen:`${screen.width}x${screen.height}`,devId:localStorage.getItem("streamtalk_devId")||localStorage.setItem("streamtalk_devId","dev_"+Math.random().toString(36).slice(2,8))||localStorage.getItem("streamtalk_devId")};}
+function filterText(t){return badWords.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
+function toggleOwner(){ownerPanel.style.display=ownerPanel.style.display==="flex"?"none":"flex";}
+function toggleLogs(){logPanel.style.display=logPanel.style.display==="flex"?"none":"flex";}
 
 // --- Login ---
-loginModal.style.display="flex";
 loginBtn.onclick=async()=>{
-  let nick=nicknameInput.value.trim();
-  if(!nick){loginMsg.textContent="Enter a name!"; return;}
-  // check uniqueness
-  let namesSnap=await db.ref("users").once("value");
-  let names=namesSnap.val()||{};
-  if(Object.values(names).includes(nick)){loginMsg.textContent="Name taken!"; return;}
-  let dev=getDeviceInfo(); uid=dev.devId;
-  db.ref("users/"+uid).set({nick,nickTime:Date.now()});
-  loginModal.style.display="none";
-  joinRoom(nick,dev);
-  if(nick==="Zay👾💜"){ownerMenu.style.display="flex"; liveLogs.style.display="flex";}
+  let name=username.value.trim(),pass=password.value.trim();
+  if(!name||!pass){loginMsg.textContent="Enter username/password";return;}
+  let snap=await db.ref("users/"+name).once("value");
+  if(snap.exists()&&snap.val().banned){loginMsg.textContent="You are banned";return;}
+  if(!snap.exists()){await db.ref("users/"+name).set({pass:pass,banned:false,uid:"user_"+Math.random().toString(36).slice(2,8)});}
+  uid=name;loginDiv.style.display="none";addSys("Logged in as "+uid);loadProfiles();
 };
 
-// --- Chat ---
-function joinRoom(nick,dev){
-  room="room_test"; partner="self_test";
-  addSys(`Connected as ${nick}`);
-  db.ref("rooms/"+room+"/messages").on("child_added",snap=>{let m=snap.val();if(m.sender!==uid)addMsg(m.text,"other");});
+// --- Profiles ---
+async function loadProfiles(){
+  let snap=await db.ref("users").once("value");profiles.innerHTML="";
+  let users=snap.val()||{};
+  for(let u in users){
+    let div=document.createElement("div");div.className="profile-card";if(users[u].banned)div.classList.add("banned");
+    div.innerHTML=`<img src="" alt="avatar"><span>${u}</span>`;
+    div.onclick=()=>addSys("Clicked "+u);
+    profiles.appendChild(div);
+  }
 }
 
+// --- Self-Test Chat ---
+async function joinRoom(){room="room_test";partner="self_test";addSys("Connected to self");}
+
 // --- Send ---
-sendBtn.onclick=()=>{let t=filterText(input.value.trim());if(!t||!room)return;addMsg(t,"me");db.ref("rooms/"+room+"/messages").push({sender:uid,text:t});input.value="";}
-input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
+$("send").onclick=()=>{let t=filterText(input.value.trim());if(!t||!room)return;addMsg(t,"me");input.value="";}
 
 // --- Skip / Report ---
-skipBtn.onclick=()=>addSys("Skipped");
-reportBtn.onclick=()=>addSys("Report sent");
-downloadBtn.onclick=()=>{let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();};
-</script>
-</body>
-</html>
+$("skip").onclick=()=>addSys("Skipped");$("report").onclick=()=>addSys("Report sent");
+
+// --- Owner Functions (Examples) ---
+function ownerBan(){addSys("Owner banned "+$("target")?.value||"");}
+function ownerTimeout(){addSys("Owner timeout "+$("target")?.value||"");}
+function ownerMod(){addSys("Added mod "+$("target")?.value||"");}
+function ownerMute(){addSys("Muted "+$("target")?.value||"");}
+function ownerList(){addSys("Listing users");}
+function ownerSysMsg(){addSys("System msg");}
+function ownerFun(){addSys("Fun msg");}
+function ownerCopyLogs(){navigator.clipboard.writeText(logs.join("\n"));addSys("Logs copied");}
+function ownerClearLogs(){logs=[];refreshLogs();addSys("Logs cleared");}
+function ownerSelfChat(){joinRoom();}
+
+// --- Boot ---
