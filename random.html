@@ -2,29 +2,84 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StreamTalk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamTalk Random Chat</title>
 <style>
-body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:16px;}
-.chat-box{background:#1c1f2e;border-radius:16px;padding:16px;flex:1;display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;}
-textarea{flex:1;border:none;outline:none;border-radius:12px;padding:10px;background:#2a2f45;color:white;resize:none;}
-button{border:none;border-radius:12px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;margin-top:6px;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:12px;}
+.chat-box{background:#1c1f2e;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
+textarea{flex:1;border:none;outline:none;border-radius:12px;padding:8px;background:#2a2f45;color:white;resize:none;}
+button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;margin-top:4px;}
 .message{padding:6px 10px;border-radius:12px;margin:4px 0;}
 .me{background:#7c3aed;color:white;}
 .other{background:#2a2f45;color:white;}
 .system{text-align:center;color:#aaa;margin:4px 0;}
-footer{margin-top:12px;text-align:center;color:#aaa;font-size:13px;}
+#ownerMenu{display:none;background:#1a1d2e;padding:10px;border-radius:12px;max-height:200px;overflow-y:auto;flex-direction:column;gap:4px;}
+#liveLogs{display:none;background:#1a1d2e;padding:8px;border-radius:12px;max-height:150px;overflow-y:auto;font-size:12px;color:#cfd3ff;}
+#logsContent{overflow-y:auto;}
+#copyLogs{align-self:flex-end;padding:4px 6px;border-radius:6px;background:#7c3aed;color:white;margin-bottom:4px;}
 </style>
 </head>
 <body>
 
 <h1>StreamTalk Chat</h1>
+
 <div class="chat-box" id="messages"></div>
-<textarea id="msg" placeholder="Type a message..."></textarea>
+<textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
 <button id="send">Send</button>
 <button id="skip">Skip</button>
 <button id="report">Report</button>
 <button id="download">Download Logs</button>
+
+<!-- Owner Menu -->
+<div id="ownerMenu">
+  <input id="target" placeholder="UserID / Target" style="width:100%;padding:4px;border-radius:6px;border:none;outline:none;background:#2a2f45;color:white;">
+</div>
+
+<!-- Owner Buttons (scrollable) -->
+<div id="ownerBtns" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
+<!-- Moderation -->
+<button onclick="ownerBan()">Ban</button>
+<button onclick="ownerTimeout()">Timeout 30s</button>
+<button onclick="ownerMod()">Add Moderator</button>
+<button onclick="ownerMute()">Mute User</button>
+<button onclick="ownerList()">List Users</button>
+<!-- Fun / Test -->
+<button onclick="ownerSysMsg()">System Msg</button>
+<button onclick="ownerFun()">Fun Msg</button>
+<button onclick="ownerFlood()">Flood Test</button>
+<button onclick="ownerColor()">Change Colors</button>
+<button onclick="ownerTyping()">Fake Typing</button>
+<!-- Logs / Debug -->
+<button onclick="ownerCopy()">Copy Logs</button>
+<button onclick="ownerClearLogs()">Clear Logs</button>
+<button onclick="ownerDownload()">Download Logs</button>
+<button onclick="ownerFiltered()">Filtered Msgs</button>
+<button onclick="ownerRoomInfo()">Room Info</button>
+<!-- Self-Test / Dev -->
+<button onclick="ownerSelfChat()">Connect Self</button>
+<button onclick="ownerDisconnect()">Disconnect</button>
+<button onclick="ownerAutoMsg()">Auto Msg</button>
+<button onclick="ownerFakeUsers()">Fake Users</button>
+<button onclick="ownerTypingSpeed()">Typing Speed</button>
+<!-- Extras -->
+<button onclick="ownerHighlight()">Highlight User</button>
+<button onclick="ownerEmoji()">Emoji / Stickers</button>
+<button onclick="ownerEmpty()">Force Empty Chat</button>
+<button onclick="ownerToggleFilter()">Toggle Filter</button>
+<button onclick="ownerRoomName()">Room Name Override</button>
+<!-- Advanced -->
+<button onclick="ownerRawDB()">Raw DB Snapshot</button>
+<button onclick="ownerStrangerLeave()">Stranger Left</button>
+<button onclick="ownerMultiStranger()">Multiple Strangers</button>
+<button onclick="ownerAutoReconnect()">Force Reconnect</button>
+<button onclick="ownerInjectMsg()">Inject Custom Msg</button>
+</div>
+
+<!-- Live Logs Panel -->
+<div id="liveLogs">
+  <button id="copyLogs">Copy All Logs</button>
+  <div id="logsContent"></div>
+</div>
 
 <footer>
 <a href="rules.html" target="_blank">Rules</a> •
@@ -35,57 +90,49 @@ footer{margin-top:12px;text-align:center;color:#aaa;font-size:13px;}
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-// --- Firebase config ---
-const cfg={
-apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",
-authDomain:"streamtalk-fcfd5.firebaseapp.com",
-databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",
-projectId:"streamtalk-fcfd5",
-storageBucket:"streamtalk-fcfd5.firebasestorage.app",
-messagingSenderId:"971872258888",
-appId:"1:971872258888:web:316fe78c5b762611d7c17d"
-};
-firebase.initializeApp(cfg);
-const db=firebase.database();
+// --- Firebase ---
+const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamtalk-fcfd5.firebaseapp.com",databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",projectId:"streamtalk-fcfd5",storageBucket:"streamtalk-fcfd5.firebasestorage.app",messagingSenderId:"971872258888",appId:"1:971872258888:web:316fe78c5b762611d7c17d"};
+firebase.initializeApp(cfg);const db=firebase.database();
 
-// --- Setup user & room ---
-const uid=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("streamtalk_user_id");
-let room=null,partner=null,logs=[];
+// --- User ---
+let uid=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("streamtalk_user_id");
+let room=null,partner=null,logs=[],mods=[];
 
 // --- UI ---
 const msgBox=document.getElementById("messages"),input=document.getElementById("msg");
 const sendBtn=document.getElementById("send"),skipBtn=document.getElementById("skip");
 const reportBtn=document.getElementById("report"),downloadBtn=document.getElementById("download");
+const ownerMenu=document.getElementById("ownerMenu"),ownerBtns=document.getElementById("ownerBtns");
+const liveLogs=document.getElementById("liveLogs"),logsContent=document.getElementById("logsContent"),copyLogs=document.getElementById("copyLogs");
 
 // --- Helpers ---
-function addMsg(text,type){let m=document.createElement("div");m.className=type;m.textContent=text;msgBox.appendChild(m);msgBox.scrollTop=msgBox.scrollHeight;logs.push({text,type,time:Date.now()});}
-function addSys(text){addMsg(text,"system");}
-function downloadLogs(){let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();}
+function addSys(t){let d=document.createElement("div");d.className="system";d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push("[SYS] "+t);refreshLogs();}
+function addMsg(t,type){let d=document.createElement("div");d.className=type;d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push(`[${type}] ${t}`);refreshLogs();}
+function refreshLogs(){logsContent.innerHTML=logs.map(l=>`<div>${l}</div>`).join("");logsContent.scrollTop=logsContent.scrollHeight;}
 
-// --- Filter ---
+// --- Filters ---
 const badWords=["fag","faggot","nigger"];
-function checkText(t){return badWords.some(w=>t.toLowerCase().includes(w));}
+function filterText(t){return badWords.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
 
-// --- Match / chat ---
+// --- Self-Test Chat ---
 async function joinRoom(){
 room="room_test";partner="self_test";
-addSys("Connected to self (test mode)");
-db.ref("rooms/"+room+"/messages").on("child_added",snap=>{
-let m=snap.val();
-if(m.sender!==uid){addMsg(m.text,"other");}
-});
+addSys("Connected to self (test)");
+db.ref("rooms/"+room+"/messages").on("child_added",snap=>{let m=snap.val();if(m.sender!==uid){addMsg(m.text,"other");}});
 }
 
 // --- Send ---
-sendBtn.onclick=()=>{let t=input.value.trim();if(!t||checkText(t))return;addMsg(t,"me");db.ref("rooms/"+room+"/messages").push({sender:uid,text:t});input.value="";}
+sendBtn.onclick=()=>{let t=filterText(input.value.trim());if(!t||!room)return;addMsg(t,"me");db.ref("rooms/"+room+"/messages").push({sender:uid,text:t});input.value="";}
 input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
 
 // --- Skip / Report ---
 skipBtn.onclick=()=>addSys("Skipped");
 reportBtn.onclick=()=>addSys("Report sent");
+downloadBtn.onclick=()=>{let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();};
 
-// --- Logs ---
-downloadBtn.onclick=downloadLogs;
+// --- Owner visibility ---
+let isOwner=true;
+if(isOwner){ownerMenu.style.display="flex";ownerBtns.style.display="flex";liveLogs.style.display="flex";}
 
 // --- Boot ---
 joinRoom();
