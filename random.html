@@ -1,310 +1,422 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Random Talk</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Random Talk</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #050816;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
 
-body{
-background:#0b0b14;
-color:white;
-font-family:sans-serif;
-padding:20px;
-margin:0;
-}
+    a {
+      color: #7c3aed;
+      font-size: 18px;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
 
-a{
-color:#7c3aed;
-font-size:18px;
-text-decoration:none;
-}
+    h1 {
+      margin: 18px 0 10px;
+      font-size: 38px;
+      font-weight: 800;
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-h1{
-background:linear-gradient(90deg,#7c3aed,#ec4899);
--webkit-background-clip:text;
--webkit-text-fill-color:transparent;
-font-size:38px;
-margin:24px 0 10px;
-}
+    .status {
+      color: #9ca3af;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
 
-.chatbox{
-height:320px;
-background:#111827;
-border-radius:12px;
-padding:12px;
-overflow:auto;
-margin-bottom:12px;
-display:flex;
-flex-direction:column;
-}
+    .error {
+      color: #ff6b6b;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+      min-height: 20px;
+    }
 
-.message{
-padding:10px 14px;
-border-radius:14px;
-margin-bottom:8px;
-max-width:70%;
-word-break:break-word;
-}
+    .chatbox {
+      height: 420px;
+      background: #0f172a;
+      border-radius: 18px;
+      padding: 14px;
+      overflow-y: auto;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-.you{
-background:linear-gradient(90deg,#7c3aed,#ec4899);
-align-self:flex-end;
-text-align:right;
-}
+    .message {
+      padding: 12px 16px;
+      border-radius: 18px;
+      max-width: 75%;
+      word-break: break-word;
+      font-size: 16px;
+      line-height: 1.4;
+    }
 
-.stranger{
-background:#1b2540;
-align-self:flex-start;
-}
+    .you {
+      align-self: flex-end;
+      text-align: right;
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      color: white;
+      border-bottom-right-radius: 6px;
+    }
 
-input{
-width:100%;
-box-sizing:border-box;
-padding:14px;
-border-radius:10px;
-border:none;
-background:#111827;
-color:white;
-margin-bottom:10px;
-font-size:16px;
-}
+    .stranger {
+      align-self: flex-start;
+      background: #1e2a4a;
+      color: white;
+      border-bottom-left-radius: 6px;
+    }
 
-button{
-width:100%;
-padding:14px;
-border-radius:10px;
-border:none;
-background:linear-gradient(90deg,#7c3aed,#ec4899);
-color:white;
-font-size:16px;
-margin-bottom:10px;
-}
+    .system {
+      align-self: center;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 14px;
+      text-align: center;
+      max-width: 100%;
+      padding: 4px 8px;
+    }
 
-.secondary{
-background:#333;
-}
+    input {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      outline: none;
+      background: #0f172a;
+      color: white;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
 
-.status{
-color:#9ca3af;
-margin-bottom:10px;
-}
+    input::placeholder {
+      color: #9ca3af;
+    }
 
-.error{
-color:#ff6b6b;
-margin-bottom:10px;
-white-space:pre-wrap;
-}
+    button {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      color: white;
+    }
 
-</style>
+    #sendBtn {
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+    }
+
+    #reloadBtn {
+      background: #3a3a3a;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  </style>
 </head>
-
 <body>
 
-<a href="index.html">← Back</a>
-
-<h1>Random Talk</h1>
-
-<div class="status" id="status">Connecting...</div>
-<div class="error" id="error"></div>
-
-<div id="chat" class="chatbox"></div>
-
-<input id="messageInput" placeholder="Type a message..." />
-<button id="sendBtn">Send</button>
-<button id="reloadBtn" class="secondary">Reload Room</button>
-
-<script>
-
-const SUPABASE_URL = "https://hcefuiaealcgixftfric.supabase.co"
-
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWZ1aWFlYWxjZ2l4ZnRmcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNjksImV4cCI6MjA4ODUyNTA2OX0.5A23xPBlvI9pd1z_xqQNQFMVZeeihp5KBhl3BK8IZrg"
-
-const ROOM = "test_room"
-
-const statusEl = document.getElementById("status")
-const errorEl = document.getElementById("error")
-const chatEl = document.getElementById("chat")
-const inputEl = document.getElementById("messageInput")
-const sendBtn = document.getElementById("sendBtn")
-const reloadBtn = document.getElementById("reloadBtn")
-
-function setStatus(msg){
-statusEl.textContent = msg
-}
-
-function setError(msg){
-errorEl.textContent = msg || ""
-}
-
-function clearError(){
-errorEl.textContent = ""
-}
-
-function renderMessages(rows){
-
-chatEl.innerHTML=""
-
-rows.forEach(row=>{
-
-const div=document.createElement("div")
-div.className="message"
-
-if(row.message.startsWith("You:")){
-div.classList.add("you")
-div.textContent=row.message.replace("You: ","")
-}else{
-div.classList.add("stranger")
-div.textContent=row.message
-}
-
-chatEl.appendChild(div)
-
-})
-
-chatEl.scrollTop=chatEl.scrollHeight
-
-}
-
-async function supabaseGet(path){
-
-const res = await fetch(SUPABASE_URL + path,{
-method:"GET",
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY,
-"Accept":"application/json"
-}
-})
-
-const text=await res.text()
-
-let data
-
-try{
-data=text?JSON.parse(text):null
-}catch(e){
-data=text
-}
-
-if(!res.ok){
-throw new Error(typeof data==="string"?data:JSON.stringify(data))
-}
-
-return data
-
-}
-
-async function supabasePost(path,body){
-
-const res=await fetch(SUPABASE_URL+path,{
-method:"POST",
-headers:{
-"apikey":SUPABASE_KEY,
-"Authorization":"Bearer "+SUPABASE_KEY,
-"Content-Type":"application/json",
-"Prefer":"return=representation"
-},
-body:JSON.stringify(body)
-})
-
-const text=await res.text()
-
-let data
-
-try{
-data=text?JSON.parse(text):null
-}catch(e){
-data=text
-}
-
-if(!res.ok){
-throw new Error(typeof data==="string"?data:JSON.stringify(data))
-}
-
-return data
-
-}
-
-async function loadMessages(){
-
-setStatus("Loading messages...")
-clearError()
-
-try{
-
-const rows=await supabaseGet(
-"/rest/v1/messages?select=id,message,room,created_at&room=eq."+encodeURIComponent(ROOM)+"&order=created_at.asc"
-)
-
-renderMessages(Array.isArray(rows)?rows:[])
-setStatus("Connected")
-
-}catch(err){
-
-setError("Load failed: "+err.message)
-setStatus("Load failed")
-
-}
-
-}
-
-async function sendMessage(){
-
-const text=inputEl.value.trim()
-
-if(!text){
-setError("Type a message first")
-return
-}
-
-setStatus("Sending...")
-clearError()
-sendBtn.disabled=true
-
-try{
-
-await supabasePost("/rest/v1/messages",[
-{
-message:"You: "+text,
-room:ROOM
-}
-])
-
-inputEl.value=""
-await loadMessages()
-
-}catch(err){
-
-setError("Send failed: "+err.message)
-setStatus("Send failed")
-
-}
-
-sendBtn.disabled=false
-
-}
-
-function start(){
-
-setStatus("Connecting...")
-loadMessages()
-setInterval(loadMessages,2000)
-
-}
-
-sendBtn.addEventListener("click",sendMessage)
-reloadBtn.addEventListener("click",loadMessages)
-
-inputEl.addEventListener("keydown",function(e){
-if(e.key==="Enter"){
-sendMessage()
-}
-})
-
-start()
-
-</script>
+  <a href="index.html">← Back</a>
+
+  <h1>Random Talk</h1>
+
+  <div class="status" id="status">Connecting...</div>
+  <div class="error" id="error"></div>
+
+  <div id="chat" class="chatbox"></div>
+
+  <input id="messageInput" placeholder="Type a message..." />
+  <button id="sendBtn">Send</button>
+  <button id="reloadBtn">Reload Room</button>
+
+  <script>
+    const SUPABASE_URL = "https://hcefuiaealcgixftfric.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWZ1aWFlYWxjZ2l4ZnRmcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNjksImV4cCI6MjA4ODUyNTA2OX0.5A23xPBlvI9pd1z_xqQNQFMVZeeihp5KBhl3BK8IZrg";
+    const ROOM = "test_room";
+
+    const statusEl = document.getElementById("status");
+    const errorEl = document.getElementById("error");
+    const chatEl = document.getElementById("chat");
+    const inputEl = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const reloadBtn = document.getElementById("reloadBtn");
+
+    const senderId = getOrCreateSenderId();
+    let refreshTimer = null;
+
+    function getOrCreateSenderId() {
+      let id = sessionStorage.getItem("randomTalkSenderId");
+      if (!id) {
+        id = "user_" + Math.random().toString(36).slice(2, 10);
+        sessionStorage.setItem("randomTalkSenderId", id);
+      }
+      return id;
+    }
+
+    function setStatus(msg) {
+      statusEl.textContent = msg;
+    }
+
+    function setError(msg) {
+      errorEl.textContent = msg || "";
+    }
+
+    function clearError() {
+      errorEl.textContent = "";
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function packMessage(text) {
+      return senderId + "::" + text;
+    }
+
+    function unpackMessage(raw) {
+      if (typeof raw !== "string") {
+        return {
+          isYou: false,
+          text: ""
+        };
+      }
+
+      const separator = "::";
+      const index = raw.indexOf(separator);
+
+      if (index === -1) {
+        return {
+          isYou: false,
+          text: raw
+        };
+      }
+
+      const msgSenderId = raw.slice(0, index);
+      const text = raw.slice(index + separator.length);
+
+      return {
+        isYou: msgSenderId === senderId,
+        text
+      };
+    }
+
+    function renderMessages(rows) {
+      chatEl.innerHTML = "";
+
+      if (!rows.length) {
+        const empty = document.createElement("div");
+        empty.className = "system";
+        empty.textContent = "No messages yet. Say hi.";
+        chatEl.appendChild(empty);
+        return;
+      }
+
+      rows.forEach(row => {
+        const parsed = unpackMessage(row.message);
+
+        if (!parsed.text.trim()) return;
+
+        const div = document.createElement("div");
+        div.className = "message " + (parsed.isYou ? "you" : "stranger");
+        div.textContent = parsed.text;
+        chatEl.appendChild(div);
+      });
+
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    async function supabaseGet(path) {
+      const res = await fetch(SUPABASE_URL + path, {
+        method: "GET",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY,
+          Accept: "application/json"
+        }
+      });
+
+      const text = await res.text();
+
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+
+      if (!res.ok) {
+        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+      }
+
+      return data;
+    }
+
+    async function supabasePost(path, body) {
+      const res = await fetch(SUPABASE_URL + path, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(body)
+      });
+
+      const text = await res.text();
+
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+
+      if (!res.ok) {
+        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+      }
+
+      return data;
+    }
+
+    async function supabaseDelete(path) {
+      const res = await fetch(SUPABASE_URL + path, {
+        method: "DELETE",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: "Bearer " + SUPABASE_KEY
+        }
+      });
+
+      const text = await res.text();
+
+      let data;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+
+      if (!res.ok) {
+        throw new Error(typeof data === "string" ? data : JSON.stringify(data));
+      }
+
+      return data;
+    }
+
+    async function loadMessages(showStatus = true) {
+      if (showStatus) setStatus("Loading messages...");
+      clearError();
+
+      try {
+        const rows = await supabaseGet(
+          "/rest/v1/messages?select=id,message,room,created_at&room=eq." +
+          encodeURIComponent(ROOM) +
+          "&order=created_at.asc"
+        );
+
+        renderMessages(Array.isArray(rows) ? rows : []);
+        setStatus("Connected");
+      } catch (err) {
+        setError("Load failed: " + err.message);
+        setStatus("Load failed");
+      }
+    }
+
+    async function sendMessage() {
+      const text = inputEl.value.trim();
+
+      if (!text) {
+        setError("Type a message first");
+        return;
+      }
+
+      setStatus("Sending...");
+      clearError();
+      sendBtn.disabled = true;
+
+      try {
+        await supabasePost("/rest/v1/messages", [
+          {
+            message: packMessage(text),
+            room: ROOM
+          }
+        ]);
+
+        inputEl.value = "";
+        await loadMessages(false);
+        setStatus("Connected");
+      } catch (err) {
+        setError("Send failed: " + err.message);
+        setStatus("Send failed");
+      }
+
+      sendBtn.disabled = false;
+    }
+
+    async function reloadRoom() {
+      setStatus("Reloading room...");
+      clearError();
+      reloadBtn.disabled = true;
+
+      try {
+        await supabaseDelete("/rest/v1/messages?room=eq." + encodeURIComponent(ROOM));
+        await loadMessages(false);
+        setStatus("Room cleared");
+      } catch (err) {
+        setError("Reload failed: " + err.message);
+        setStatus("Reload failed");
+      }
+
+      reloadBtn.disabled = false;
+    }
+
+    function start() {
+      setStatus("Connecting...");
+      loadMessages();
+
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(() => {
+        loadMessages(false);
+      }, 2000);
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    reloadBtn.addEventListener("click", reloadRoom);
+
+    inputEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    start();
+  </script>
 
 </body>
 </html>
