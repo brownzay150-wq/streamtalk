@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Random Talk - StreamTalk</title>
 
-<style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<style>
 body{
 background:#0f0f14;
 color:white;
@@ -32,7 +33,7 @@ background:#1c1f2e;
 padding:20px;
 border-radius:15px;
 margin-bottom:20px;
-height:220px;
+height:260px;
 overflow:auto;
 }
 
@@ -72,7 +73,6 @@ color:white;
 .skip{
 background:#333;
 }
-
 </style>
 
 </head>
@@ -82,49 +82,75 @@ background:#333;
 <a href="index.html">← Back</a>
 
 <h1>Random Talk</h1>
-<p class="subtitle">You're chatting with a random user.</p>
+<p class="subtitle">Connecting to a random user...</p>
 
-<div id="chat" class="chatbox">
-<div class="message stranger">Stranger: Hey 👋</div>
-</div>
+<div id="chat" class="chatbox"></div>
 
 <input id="msg" placeholder="Type a message...">
 
 <button onclick="sendMessage()">Send</button>
-
 <button class="skip" onclick="skipUser()">Skip User</button>
 
 <script>
 
-function sendMessage(){
+// 🔑 Your Supabase credentials
+const SUPABASE_URL = "https://hcefiuiaealcgixftfric.supabase.co"
+const SUPABASE_KEY = "sb_publishable_5T9RDsl6x-ITyJ88HD0uyg_BPPBuLE-"
 
-let input = document.getElementById("msg")
-let chat = document.getElementById("chat")
+// connect
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
 
-if(input.value.trim() === "") return
+let userId = Math.random().toString(36).substring(2)
+let room = "room_" + Math.floor(Math.random()*5)
 
-let msg = document.createElement("div")
-msg.className = "message you"
-msg.innerText = "You: " + input.value
+const chat = document.getElementById("chat")
 
-chat.appendChild(msg)
-
+function addMessage(text, type){
+let div = document.createElement("div")
+div.className = "message " + type
+div.innerText = text
+chat.appendChild(div)
 chat.scrollTop = chat.scrollHeight
+}
 
+async function sendMessage(){
+let input = document.getElementById("msg")
+if(!input.value.trim()) return
+
+await client.from("messages").insert({
+room: room,
+user: userId,
+text: input.value
+})
+
+addMessage("You: " + input.value, "you")
 input.value = ""
-
 }
 
 function skipUser(){
+location.reload()
+}
 
-let chat = document.getElementById("chat")
+client
+.channel("chat")
+.on(
+"postgres_changes",
+{
+event: "INSERT",
+schema: "public",
+table: "messages"
+},
+payload => {
 
-chat.innerHTML = '<div class="message stranger">Stranger: New user joined 👋</div>'
+if(payload.new.user !== userId && payload.new.room === room){
+addMessage("Stranger: " + payload.new.text, "stranger")
+}
 
 }
+)
+.subscribe()
 
 </script>
 
 </body>
-
 </html>
