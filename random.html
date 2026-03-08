@@ -16,6 +16,7 @@ margin:0;
 a{
 color:#7c3aed;
 font-size:18px;
+text-decoration:none;
 }
 
 h1{
@@ -37,9 +38,9 @@ margin-bottom:12px;
 
 .message{
 background:#1b2540;
-padding:8px 10px;
-border-radius:8px;
-margin-bottom:6px;
+padding:10px 12px;
+border-radius:10px;
+margin-bottom:8px;
 word-break:break-word;
 }
 
@@ -73,22 +74,14 @@ background:#333;
 .status{
 color:#9ca3af;
 margin-bottom:10px;
+font-size:15px;
 }
 
 .error{
 color:#ff6b6b;
 margin-bottom:10px;
+font-size:15px;
 white-space:pre-wrap;
-}
-
-.log{
-background:#0f172a;
-padding:10px;
-border-radius:10px;
-margin-bottom:12px;
-font-size:14px;
-white-space:pre-wrap;
-color:#cbd5e1;
 }
 </style>
 </head>
@@ -99,9 +92,8 @@ color:#cbd5e1;
 
 <h1>Random Talk</h1>
 
-<div class="status" id="status">Starting...</div>
+<div class="status" id="status">Connecting...</div>
 <div class="error" id="error"></div>
-<div class="log" id="log">Booting...</div>
 
 <div id="chat" class="chatbox"></div>
 
@@ -116,24 +108,17 @@ const ROOM = "test_room";
 
 const statusEl = document.getElementById("status");
 const errorEl = document.getElementById("error");
-const logEl = document.getElementById("log");
 const chatEl = document.getElementById("chat");
 const inputEl = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 const reloadBtn = document.getElementById("reloadBtn");
 
-function log(msg){
-  logEl.textContent += "\n" + msg;
-}
-
 function setStatus(msg){
   statusEl.textContent = msg;
-  log("STATUS: " + msg);
 }
 
 function setError(msg){
   errorEl.textContent = msg || "";
-  if(msg) log("ERROR: " + msg);
 }
 
 function clearError(){
@@ -152,10 +137,7 @@ function renderMessages(rows){
 }
 
 async function supabaseGet(path){
-  const url = SUPABASE_URL + path;
-  log("GET " + url);
-
-  const res = await fetch(url, {
+  const res = await fetch(SUPABASE_URL + path, {
     method: "GET",
     headers: {
       "apikey": SUPABASE_KEY,
@@ -165,9 +147,8 @@ async function supabaseGet(path){
   });
 
   const text = await res.text();
-  log("GET status: " + res.status);
-
   let data;
+
   try{
     data = text ? JSON.parse(text) : null;
   }catch(e){
@@ -182,10 +163,7 @@ async function supabaseGet(path){
 }
 
 async function supabasePost(path, body){
-  const url = SUPABASE_URL + path;
-  log("POST " + url);
-
-  const res = await fetch(url, {
+  const res = await fetch(SUPABASE_URL + path, {
     method: "POST",
     headers: {
       "apikey": SUPABASE_KEY,
@@ -197,9 +175,8 @@ async function supabasePost(path, body){
   });
 
   const text = await res.text();
-  log("POST status: " + res.status);
-
   let data;
+
   try{
     data = text ? JSON.parse(text) : null;
   }catch(e){
@@ -225,7 +202,6 @@ async function loadMessages(){
     );
 
     renderMessages(Array.isArray(rows) ? rows : []);
-    log("Loaded messages: " + (Array.isArray(rows) ? rows.length : 0));
     setStatus("Connected");
   }catch(err){
     setError("Load failed: " + err.message);
@@ -235,6 +211,7 @@ async function loadMessages(){
 
 async function sendMessage(){
   const text = inputEl.value.trim();
+
   if(!text){
     setError("Type a message first");
     return;
@@ -253,7 +230,6 @@ async function sendMessage(){
     ]);
 
     inputEl.value = "";
-    log("Message sent");
     await loadMessages();
   }catch(err){
     setError("Send failed: " + err.message);
@@ -264,10 +240,7 @@ async function sendMessage(){
 }
 
 function start(){
-  log("Script running");
-  log("URL set");
-  log("Key length: " + SUPABASE_KEY.length);
-  setStatus("Ready to connect");
+  setStatus("Connecting...");
   loadMessages();
   setInterval(loadMessages, 2000);
 }
