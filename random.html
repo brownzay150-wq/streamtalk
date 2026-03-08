@@ -19,15 +19,29 @@
 .system{text-align:center;color:#9ca3af;margin:10px auto;}
 .badge-wrap{display:flex;gap:8px;}
 .badge{font-size:12px;padding:7px 10px;border-radius:999px;background:#2a2f45;color:#cfd3ff;}
+.secondary{background:#2a2f45;}
 </style>
 </head>
 <body>
 <div class="app">
 <div class="topbar"><div class="logo">StreamTalk</div></div>
 <div class="chat-box" id="messages"><div id="emptyState" class="system">Open on two devices to test.</div></div>
-<div class="input-wrap" style="display:flex;gap:10px;"><textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea><button id="send">Send</button></div>
-<div style="display:flex;gap:10px;margin-top:8px;"><button id="skip">Skip</button><button id="clear">Clear</button></div>
-<div class="badge-wrap" style="margin-top:10px;"><div id="online" class="badge">Online: 0</div><div id="status" class="badge">Idle</div></div>
+
+<div class="input-wrap" style="display:flex;gap:10px;">
+  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
+  <button id="send">Send</button>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:8px;">
+  <button id="skip" class="secondary">Skip</button>
+  <button id="clear" class="secondary">Clear</button>
+  <button id="report" class="secondary">Report</button>
+</div>
+
+<div class="badge-wrap" style="margin-top:10px;">
+  <div id="online" class="badge">Online: 0</div>
+  <div id="status" class="badge">Idle</div>
+</div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -37,7 +51,7 @@ const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamta
 firebase.initializeApp(cfg);const db=firebase.database();
 
 const $=(id)=>document.getElementById(id);
-const ms=$("msg"),msgs=$("messages"),es=$("emptyState"),send=$("send"),skip=$("skip"),clr=$("clear"),online=$("online"),status=$("status");
+const ms=$("msg"),msgs=$("messages"),es=$("emptyState"),send=$("send"),skip=$("skip"),clr=$("clear"),report=$("report"),online=$("online"),status=$("status");
 
 let id=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,11))||sessionStorage.getItem("streamtalk_user_id");
 let room=null,partner=null,connected=false,displayed={},timer=null;
@@ -95,6 +109,14 @@ ms.value="";db.ref("rooms/"+room+"/typing/"+id).set(false);
 }
 skip.addEventListener("click",async()=>{setStatusText("Skipping");await cleanup();addSys("You skipped");tryMatch();});
 clr.addEventListener("click",()=>{resetChat();addSys("Chat cleared");});
+
+// ---------------- Report ----------------
+report.addEventListener("click", async ()=>{
+  if(room && partner){
+    await db.ref("reports").push({reportedBy:id,reportedUser:partner,roomId:room,time:Date.now()});
+    alert("Report submitted!");
+  } else alert("No user to report right now.");
+});
 
 // ---------------- Disconnect / Cleanup ----------------
 async function cleanup(){
