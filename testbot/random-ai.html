@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamTalk AI Test</title>
+<style>
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:16px;min-width:300px;max-width:600px;display:flex;flex-direction:column;gap:10px;margin:auto;}
+textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
+button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.message{padding:8px 12px;border-radius:14px;margin:4px 0;}
+.me{background:#7c3aed;color:white;border-bottom-right-radius:6px;}
+.other{background:#2a2f45;color:white;border-bottom-left-radius:6px;}
+.system{text-align:center;color:#aaa;margin:6px 0;}
+</style>
+</head>
+<body>
+
+<div class="chat-box" id="chat">
+  <div id="messages"></div>
+  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
+  <button id="send">Send</button>
+</div>
+
+<script>
+// --- Elements ---
+const msgs = document.getElementById("messages");
+const ms = document.getElementById("msg");
+const send = document.getElementById("send");
+
+// --- Helper ---
+function addMsg(text,type){
+  const m=document.createElement("div");
+  m.className=type;
+  m.textContent=text;
+  msgs.appendChild(m);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function addSys(text){addMsg(text,"system");}
+
+// --- AI responses ---
+const botResponses = [
+  "Hello there!",
+  "How's your day going?",
+  "Interesting...",
+  "Tell me more!",
+  "I see.",
+  "Cool!"
+];
+
+function aiRespond(){
+  const delay = Math.random()*1000 + 500;
+  setTimeout(()=>{
+    const res = botResponses[Math.floor(Math.random()*botResponses.length)];
+    addMsg(res,"other");
+  },delay);
+}
+
+// --- Send event ---
+send.addEventListener("click",()=>{
+  const text = ms.value.trim();
+  if(!text) return;
+  addMsg(text,"me");
+  ms.value="";
+  aiRespond();
+});
+ms.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !e.shiftKey){e.preventDefault();send.click();}
+});
+
+// --- System message on load ---
+addSys("AI bot ready! You can chat with it to test messages.");
+</script>
+
+</body>
+</html>
