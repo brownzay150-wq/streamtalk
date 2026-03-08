@@ -3,130 +3,106 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamTalk</title>
+<title>StreamTalk Chat</title>
 <style>
-body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:12px;}
-.chat-box{background:#1c1f2e;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;min-height:50vh;}
-textarea{flex:1;border:none;outline:none;border-radius:12px;padding:10px;background:#2a2f45;color:white;resize:none;}
-button{border:none;border-radius:12px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
-.message{padding:6px 10px;border-radius:12px;margin:4px 0;word-wrap:break-word;display:flex;align-items:center;gap:4px;}
-.me{background:#7c3aed;color:white;align-self:flex-end;}
-.other{background:#2a2f45;color:white;align-self:flex-start;}
-.avatar{width:12px;height:12px;border-radius:50%;background:#fff;}
-.system{text-align:center;color:#aaa;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px;}
+textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
+button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.message{padding:8px 12px;border-radius:14px;margin:4px 0;}
+.me{background:#7c3aed;color:white;border-bottom-right-radius:6px;}
+.other{background:#2a2f45;color:white;border-bottom-left-radius:6px;}
+.system{text-align:center;color:#aaa;margin:6px 0;}
 .badge-wrap{display:flex;gap:8px;margin-top:6px;}
 .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#2a2f45;color:#cfd3ff;}
-footer{text-align:center;color:#aaa;margin-top:20px;font-size:13px;}
-footer a{color:#08f;text-decoration:none;margin:0 4px;}
+footer{text-align:center;color:#aaa;margin-top:20px;}
+footer a{color:#08f;text-decoration:none;margin:0 5px;}
 </style>
 </head>
 <body>
 
-<h1>StreamTalk Random Chat</h1>
+<h1>StreamTalk Chat</h1>
 
 <div class="chat-box">
-  <div id="status" class="system">Searching for stranger...</div>
-  <div id="messages"><div class="system">Open on two devices to test.</div></div>
-  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
-  <div style="display:flex;gap:6px;">
-    <button id="send">Send</button>
-    <button id="skip">Skip</button>
-    <button id="clear">Clear</button>
-    <button id="report">Report</button>
-    <button id="theme">Toggle Theme</button>
-  </div>
+  <div id="status">Status: Searching...</div>
+  <div id="messages"></div>
+  <textarea id="msg" placeholder="Type a message..."></textarea>
+  <button id="send">Send</button>
+  <button id="skip">Skip</button>
+  <button id="clear">Clear</button>
+  <button id="report">Report</button>
   <div class="badge-wrap">
     <div id="online" class="badge">Online: 0</div>
-    <div id="statusBadge" class="badge">Idle</div>
+    <div id="state" class="badge">Idle</div>
   </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-// Firebase
 const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamtalk-fcfd5.firebaseapp.com",databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",projectId:"streamtalk-fcfd5",storageBucket:"streamtalk-fcfd5.firebasestorage.app",messagingSenderId:"971872258888",appId:"1:971872258888:web:316fe78c5b762611d7c17d"};
 firebase.initializeApp(cfg);
 const db=firebase.database();
 
-// Elements
-const $=id=>document.getElementById(id),msgs=$("messages"),input=$("msg"),statusEl=$("status"),online=$("online"),statusBadge=$("statusBadge");
-const sendBtn=$("send"),skipBtn=$("skip"),clrBtn=$("clear"),reportBtn=$("report"),themeBtn=$("theme");
+const $=id=>document.getElementById(id);
+const status=$("status"),messages=$("messages"),msg=$("msg"),send=$("send"),skip=$("skip"),clr=$("clear"),report=$("report"),online=$("online"),state=$("state");
 
-// State
-let uid=sessionStorage.getItem("uid")||sessionStorage.setItem("uid","user_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("uid");
-let room=null,partner=null,connected=false,displayed={};
-let dark=true;
+let uid=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,10))||sessionStorage.getItem("streamtalk_user_id");
+let room=null,partner=null,connected=false,displayed={},timer=null;
 
-// --- Profanity filter ---
-const bannedWords=["fag","faggot","nigger","retard","slut","whore"];
-const clean=t=>{let c=t.toLowerCase();bannedWords.forEach(w=>{c=c.replace(new RegExp("\\b"+w+"\\b","gi"),"****")});return c;}
+// ---------------- Firebase Presence ----------------
+db.ref(".info/connected").on("value",snap=>{if(snap.val()){let p=db.ref("presence/"+uid);p.onDisconnect().remove();p.set({online:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});}});
+db.ref("presence").on("value",snap=>{online.textContent="Online: "+Object.keys(snap.val()||{}).length;});
 
-// --- Helpers ---
-const addSys=t=>{let d=document.createElement("div");d.className="system";d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
-const addMsg=(t,type)=>{let m=document.createElement("div");m.className=type;let a=document.createElement("div");a.className="avatar";m.appendChild(a);m.appendChild(document.createTextNode(" "+clean(t)));msgs.appendChild(m);msgs.scrollTop=msgs.scrollHeight;}
-const setStatus=t=>statusEl.textContent=t;
-const setBadge=t=>statusBadge.textContent=t;
+// ---------------- Functions ----------------
+function addSys(text){let d=document.createElement("div");d.className="system";d.textContent=text;messages.appendChild(d);messages.scrollTop=messages.scrollHeight;}
+function addMsg(text,type){let m=document.createElement("div");m.className=type;m.textContent=text;messages.appendChild(m);messages.scrollTop=messages.scrollHeight;}
+function setStatusText(t){status.textContent="Status: "+t;}
 
-// --- Presence ---
-db.ref(".info/connected").on("value",s=>{if(s.val()){let p=db.ref("presence/"+uid);p.onDisconnect().remove();p.set({online:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});}});
-db.ref("presence").on("value",s=>online.textContent="Online: "+Object.keys(s.val()||{}).length);
-
-// --- Match ---
+// ---------------- Match / Queue ----------------
 async function tryMatch(){
-  if(connected) return;
-  setStatus("Searching...");addSys("Searching for stranger...");
-  const w=await db.ref("waiting").once("value"),users=w.val()||{};
-  const c=Object.entries(users).filter(([k,v])=>v.userId!==uid);
-  if(c.length){const [k,u]=c[0];await db.ref("waiting/"+k).remove();return createRoom(u.userId);}
+  if(room||connected) return;
+  setStatusText("Searching");messages.innerHTML="";addSys("Searching for stranger...");
+  const w=await db.ref("waiting").once("value");const users=w.val()||{};
+  const candidates=Object.entries(users).filter(([k,v])=>v.userId!==uid).sort((a,b)=>a[1].createdAt-b[1].createdAt);
+  if(candidates.length){const [k,u]=candidates[0];const res=await db.ref("waiting/"+k).transaction(c=>c?null:undefined);if(res.committed)return createRoom(u.userId);}
   await db.ref("waiting").push({userId:uid,createdAt:Date.now()});
 }
 
-// --- Create Room ---
+// ---------------- Create / Listen Room ----------------
 async function createRoom(otherId){
-  room="room_"+Math.random().toString(36).slice(2,8);partner=otherId;connected=true;
+  room="room_"+Math.random().toString(36).slice(2,10);partner=otherId;connected=true;
   await db.ref("rooms/"+room).set({users:{[uid]:true,[otherId]:true},typing:{[uid]:false,[otherId]:false}});
   await db.ref("assignments/"+otherId).set({roomId:room,partnerId:uid});
-  msgs.innerHTML="";displayed={};addSys("Connected to stranger");setStatus("Connected");setBadge("Connected");listenRoom();playSound();
-}
-
-// --- Room listener ---
-function listenRoom(){
-  if(!room) return;
+  messages.innerHTML="";displayed={};addSys("Connected to stranger");
   db.ref("rooms/"+room).on("value",snap=>{
     let val=snap.val()||{},uids=Object.keys(val.users||{}),t=val.typing||{};
-    partner=uids.find(x=>x!==uid)||null;
-    if(connected&&uids.length<=1){handleDisconnect();}
+    partner=uids.find(x=>x!==uid)||null;if(connected&&uids.length<=1){handleDisconnect();}
     Object.entries(val.messages||{}).forEach(([k,m])=>{if(displayed[k])return;displayed[k]=true;m.sender===uid?addMsg(m.text,"me"):addMsg(m.text,"other");});
-    statusEl.textContent=partner&&t[partner]?"Stranger is typing...":"Connected";
   });
 }
 
-// --- Send / Skip / Clear / Report ---
-sendBtn.onclick=()=>{let t=input.value.trim();if(!t||!room||!connected)return;db.ref("rooms/"+room+"/messages").push({sender:uid,text:t,time:Date.now()});input.value="";playSound();}
-input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
-skipBtn.onclick=async()=>{addSys("You skipped");await cleanup();tryMatch();}
-clrBtn.onclick=()=>{msgs.innerHTML="";displayed={};addSys("Chat cleared");}
-reportBtn.onclick=()=>{if(room&&partner)db.ref("reports").push({reportedBy:uid,reportedUser:partner,roomId:room,time:Date.now()});addSys("Report submitted");}
+// ---------------- Send / Skip ----------------
+send.addEventListener("click",()=>sendMsg());
+msg.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}});
+async function sendMsg(){let t=msg.value.trim();if(!t||!room||!connected)return;await db.ref("rooms/"+room+"/messages").push({sender:uid,text:t,time:Date.now()});msg.value="";db.ref("rooms/"+room+"/typing/"+uid).set(false);}
+skip.addEventListener("click",async()=>{setStatusText("Skipping");await cleanup();addSys("You skipped");tryMatch();});
+clr.addEventListener("click",()=>{messages.innerHTML="";displayed={};addSys("Chat cleared");});
+report.addEventListener("click",()=>{if(room&&partner)db.ref("reports").push({reportedBy:uid,reportedUser:partner,roomId:room,time:Date.now()});addSys("Report submitted");});
 
-// --- Disconnect / Cleanup ---
+// ---------------- Disconnect / Cleanup ----------------
 async function cleanup(){
-  db.ref("waiting").orderByChild("userId").equalTo(uid).once("value").then(s=>s.forEach(c=>c.ref.remove()));
+  clearTimeout(timer);
+  db.ref("waiting").orderByChild("userId").equalTo(uid).once("value").then(snap=>snap.forEach(c=>c.ref.remove()));
   db.ref("assignments/"+uid).remove();
   if(room){db.ref("rooms/"+room+"/typing/"+uid).remove();db.ref("rooms/"+room+"/users/"+uid).remove();room=null;partner=null;connected=false;displayed={};}
 }
-function handleDisconnect(){setStatus("Disconnected");addSys("Stranger disconnected. Reconnecting...");setTimeout(async()=>{await cleanup();addSys("Finding new stranger");tryMatch();},1500);}
+function handleDisconnect(){setStatusText("Disconnected");addSys("Reconnecting...");timer=setTimeout(async()=>{await cleanup();addSys("Finding new stranger");tryMatch();},2000);}
 
-// --- Typing ---
-input.addEventListener("input",()=>{if(room) db.ref("rooms/"+room+"/typing/"+uid).set(input.value.trim().length>0);});
+// ---------------- Typing ----------------
+msg.addEventListener("input",()=>{if(room)db.ref("rooms/"+room+"/typing/"+uid).set(msg.value.trim().length>0);});
 
-// --- Sound Notification ---
-function playSound(){new Audio("https://www.myinstants.com/media/sounds/bell.mp3").play();}
-
-// --- Dark/Light Mode ---
-themeBtn.onclick=()=>{dark=!dark;document.body.style.background=dark?"#0f0f14":"#fff";document.body.style.color=dark?"#fff":"#000";}
-
-// --- Boot ---
+// ---------------- Boot ----------------
 tryMatch();
 </script>
 
