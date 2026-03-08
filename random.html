@@ -1,122 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>StreamTalk Random Chat</title>
-<style>
-body {
-  margin: 0;
-  padding: 16px;
-  font-family: Arial;
-  background: #0f0f14;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamTalk Random Chat</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: Arial, sans-serif;
+      background: #0f0f14;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-.chat-box,
-.profile-card,
-.owner-panel,
-.log-panel {
-  background: #1c1f2e;
-  border-radius: 16px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 50vh;
-  overflow-y: auto;
-}
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 38px;
+    }
 
-textarea {
-  flex: 1;
-  border: none;
-  outline: none;
-  border-radius: 12px;
-  padding: 8px;
-  background: #2a2f45;
-  color: white;
-  resize: none;
-}
+    .top-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-button {
-  border: none;
-  border-radius: 12px;
-  padding: 6px;
-  background: linear-gradient(90deg, #7c3aed, #ec4899);
-  color: white;
-  cursor: pointer;
-  margin-top: 4px;
-}
+    .chat-box,
+    .owner-panel,
+    .log-panel {
+      background: #1c1f2e;
+      border-radius: 16px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 280px;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
 
-.message {
-  padding: 6px 10px;
-  border-radius: 12px;
-  margin: 4px 0;
-}
+    textarea {
+      border: none;
+      outline: none;
+      border-radius: 12px;
+      padding: 12px;
+      background: #2a2f45;
+      color: white;
+      resize: none;
+      min-height: 120px;
+      font-size: 16px;
+    }
 
-.me {
-  background: #7c3aed;
-  color: white;
-}
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      background: linear-gradient(90deg, #7c3aed, #ec4899);
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
 
-.other {
-  background: #2a2f45;
-  color: white;
-}
+    .message {
+      padding: 6px 10px;
+      border-radius: 12px;
+      margin: 4px 0;
+    }
 
-.system {
-  text-align: center;
-  color: #aaa;
-  margin: 4px 0;
-}
+    .me {
+      background: #7c3aed;
+      color: white;
+    }
 
-/* Owner menu, logs, and login modal */
-#ownerMenu {
-  display: none;
-  background: #1a1d2e;
-  padding: 10px;
-  border-radius: 12px;
-  max-height: 200px;
-  overflow-y: auto;
-  flex-direction: column;
-  gap: 4px;
-}
+    .other {
+      background: #2a2f45;
+      color: white;
+    }
 
-#liveLogs {
-  display: none;
-  background: #1a1d2e;
-  padding: 8px;
-  border-radius: 12px;
-  max-height: 150px;
-  overflow-y: auto;
-  font-size: 12px;
-  color: #cfd3ff;
-}
+    .system {
+      text-align: center;
+      color: #aaa;
+      margin: 4px 0;
+    }
 
-#logsContent {
-  overflow-y: auto;
-}
-</style>
+    #ownerMenu {
+      display: none;
+      background: #1a1d2e;
+      padding: 10px;
+      border-radius: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      flex-direction: column;
+      gap: 4px;
+      min-height: auto;
+    }
+
+    #liveLogs {
+      display: none;
+      background: #1a1d2e;
+      padding: 8px;
+      border-radius: 12px;
+      max-height: 150px;
+      overflow-y: auto;
+      font-size: 12px;
+      color: #cfd3ff;
+      min-height: auto;
+    }
+
+    #logsContent {
+      overflow-y: auto;
+    }
+  </style>
 </head>
 <body>
-<h1>StreamTalk Random Chat</h1>
+  <h1>StreamTalk Random Chat</h1>
 
-<div class="chat-box" id="chatBox"></div>
+  <div class="top-buttons">
+    <button id="joinRandom">Join Random Chat</button>
+    <button id="ownerMenuBtn">Owner Menu</button>
+  </div>
 
-<textarea id="chatInput" placeholder="Type your message..."></textarea>
-<button id="sendBtn">Send</button>
+  <div class="chat-box" id="chatBox"></div>
 
-<div id="ownerMenu" class="owner-panel">
-  <p>Owner Controls</p>
-</div>
+  <textarea id="chatInput" placeholder="Type your message..."></textarea>
+  <button id="sendBtn">Send</button>
 
-<div id="liveLogs" class="log-panel">
-  <div id="logsContent"></div>
-</div>
+  <div id="ownerMenu" class="owner-panel">
+    <p>Owner Controls</p>
+  </div>
 
-<script type="module" src="app.js"></script>
+  <div id="liveLogs" class="log-panel">
+    <div id="logsContent"></div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 </html>
