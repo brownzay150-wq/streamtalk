@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>StreamTalk</title>
-<link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StreamTalk</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<h1>StreamTalk</h1>
-<button id="joinRandom">Join Random Chat</button>
-<button id="ownerMenuBtn">Owner Menu</button>
+  <div class="page">
+    <h1>StreamTalk</h1>
+    <p class="subtitle">Connect with random people instantly.</p>
 
-<div id="chatBox" class="chat-box"></div>
-<textarea id="chatInput" placeholder="Type your message..."></textarea>
-<button id="sendBtn">Send</button>
+    <div class="card">
+      <h2>Welcome</h2>
+      <p>Jump into a random text chat and start talking.</p>
 
-<div id="ownerMenu" class="owner-panel">
-  <p>Owner Controls</p>
-</div>
+      <div class="home-buttons">
+        <a class="main-btn" href="random.html">Join Random Chat</a>
+        <a class="secondary-btn" href="rules.html">View Rules</a>
+      </div>
+    </div>
 
-<div id="liveLogs" class="log-panel">
-  <div id="logsContent"></div>
-</div>
-
-<script src="app.js"></script>
+    <div class="links">
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="rules.html">Rules</a>
+    </div>
+  </div>
 </body>
 </html>
