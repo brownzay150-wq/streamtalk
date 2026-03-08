@@ -3,75 +3,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamTalk AI Test</title>
+<title>StreamTalk Test AI</title>
 <style>
-body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
-.chat-box{background:#1c1f2e;border-radius:18px;padding:16px;min-width:300px;max-width:600px;display:flex;flex-direction:column;gap:10px;margin:auto;}
-textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
-button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
-.message{padding:8px 12px;border-radius:14px;margin:4px 0;}
-.me{background:#7c3aed;color:white;border-bottom-right-radius:6px;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;}
+textarea{flex:1;border:none;outline:none;border-radius:14px;padding:15px;background:#1c1f2e;color:white;min-height:56px;max-height:140px;resize:none;}
+button{border:none;border-radius:14px;padding:15px 18px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.app{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.topbar{display:flex;justify-content:space-between;align-items:center;}
+.logo{font-size:30px;font-weight:800;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;color:transparent;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:14px;min-height:52vh;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;}
+.bubble-wrap{display:flex;flex-direction:column;margin:8px 0;}
+.bubble-wrap.me-wrap{align-items:flex-end;}
+.bubble-wrap.other-wrap{align-items:flex-start;}
+.message{max-width:80%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;}
+.me{background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;border-bottom-right-radius:6px;}
 .other{background:#2a2f45;color:white;border-bottom-left-radius:6px;}
-.system{text-align:center;color:#aaa;margin:6px 0;}
+.system{text-align:center;color:#9ca3af;margin:10px auto;}
 </style>
 </head>
 <body>
-
-<div class="chat-box" id="chat">
-  <div id="messages"></div>
-  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
-  <button id="send">Send</button>
+<div class="app">
+  <div class="topbar"><div class="logo">StreamTalk Test Mode</div></div>
+  <div class="chat-box" id="messages"><div class="system" id="emptyState">AI test mode: chat with the bot</div></div>
+  <div style="display:flex;gap:10px;margin-top:8px;">
+    <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
+    <button id="send">Send</button>
+  </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-// --- Elements ---
-const msgs = document.getElementById("messages");
+// -------- Firebase Config --------
+const cfg = {
+  apiKey: "AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",
+  authDomain: "streamtalk-fcfd5.firebaseapp.com",
+  databaseURL: "https://streamtalk-fcfd5-default-rtdb.firebaseio.com",
+  projectId: "streamtalk-fcfd5",
+  storageBucket: "streamtalk-fcfd5.firebasestorage.app",
+  messagingSenderId: "971872258888",
+  appId: "1:971872258888:web:316fe78c5b762611d7c17d"
+};
+firebase.initializeApp(cfg);
+const db = firebase.database();
+
+// -------- Elements --------
 const ms = document.getElementById("msg");
-const send = document.getElementById("send");
+const msgs = document.getElementById("messages");
+const es = document.getElementById("emptyState");
 
-// --- Helper ---
-function addMsg(text,type){
-  const m=document.createElement("div");
-  m.className=type;
-  m.textContent=text;
-  msgs.appendChild(m);
-  msgs.scrollTop=msgs.scrollHeight;
-}
-function addSys(text){addMsg(text,"system");}
+// -------- Helpers --------
+const scrollBottom = () => msgs.scrollTop = msgs.scrollHeight;
+const addSys = t => { es.style.display="none"; let d=document.createElement("div"); d.className="system"; d.textContent=t; msgs.appendChild(d); scrollBottom(); };
+const addMsg = (t,type) => { let w=document.createElement("div"); w.className="bubble-wrap "+(type==="me"?"me-wrap":"other-wrap"); let b=document.createElement("div"); b.className="message "+type; b.textContent=t; w.appendChild(b); msgs.appendChild(w); scrollBottom(); };
 
-// --- AI responses ---
-const botResponses = [
-  "Hello there!",
-  "How's your day going?",
-  "Interesting...",
-  "Tell me more!",
-  "I see.",
-  "Cool!"
-];
-
-function aiRespond(){
-  const delay = Math.random()*1000 + 500;
-  setTimeout(()=>{
-    const res = botResponses[Math.floor(Math.random()*botResponses.length)];
-    addMsg(res,"other");
-  },delay);
+// -------- AI Test --------
+async function aiResponse(text){
+  // simple reversed text bot
+  return new Promise(res=>setTimeout(()=>res("AI: "+text.split("").reverse().join("")),400));
 }
 
-// --- Send event ---
-send.addEventListener("click",()=>{
-  const text = ms.value.trim();
-  if(!text) return;
-  addMsg(text,"me");
-  ms.value="";
-  aiRespond();
+// Send Message
+document.getElementById("send").addEventListener("click", async()=>{
+  let t = ms.value.trim(); if(!t) return;
+  addMsg(t,"me"); ms.value="";
+  let r = await aiResponse(t);
+  addMsg(r,"other");
 });
-ms.addEventListener("keydown",e=>{
-  if(e.key==="Enter" && !e.shiftKey){e.preventDefault();send.click();}
-});
-
-// --- System message on load ---
-addSys("AI bot ready! You can chat with it to test messages.");
 </script>
-
 </body>
 </html>
