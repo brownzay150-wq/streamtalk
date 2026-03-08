@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Random Talk - StreamTalk</title>
 
 <style>
+
 body{
 background:#0f0f14;
 color:white;
@@ -14,42 +16,63 @@ padding:20px;
 }
 
 h1{
+font-size:40px;
 background:linear-gradient(90deg,#7c3aed,#ec4899);
 -webkit-background-clip:text;
 color:transparent;
+}
+
+.subtitle{
+color:#aaa;
+margin-bottom:25px;
 }
 
 .chatbox{
 background:#1c1f2e;
 padding:20px;
 border-radius:15px;
-margin-top:20px;
+margin-bottom:20px;
+height:220px;
+overflow:auto;
+}
+
+.message{
+margin:8px 0;
+}
+
+.you{
+color:#ec4899;
+}
+
+.stranger{
+color:#7c3aed;
 }
 
 input{
 width:100%;
 padding:15px;
-margin-top:10px;
 border:none;
 border-radius:10px;
 background:#111;
 color:white;
+margin-top:10px;
 }
 
 button{
-margin-top:10px;
-padding:15px;
 width:100%;
+padding:15px;
+margin-top:10px;
 border:none;
 border-radius:10px;
+font-size:16px;
 background:linear-gradient(90deg,#7c3aed,#ec4899);
 color:white;
-font-size:16px;
 }
 
 .skip{
 background:#333;
 }
+
 </style>
 
 </head>
@@ -59,16 +82,49 @@ background:#333;
 <a href="index.html">← Back</a>
 
 <h1>Random Talk</h1>
-<p>You're now chatting with a random user.</p>
+<p class="subtitle">You're chatting with a random user.</p>
 
-<div class="chatbox">
-<p><b>Stranger:</b> Hey</p>
+<div id="chat" class="chatbox">
+<div class="message stranger">Stranger: Hey 👋</div>
 </div>
 
-<input placeholder="Type a message...">
+<input id="msg" placeholder="Type a message...">
 
-<button>Send</button>
-<button class="skip">Skip User</button>
+<button onclick="sendMessage()">Send</button>
+
+<button class="skip" onclick="skipUser()">Skip User</button>
+
+<script>
+
+function sendMessage(){
+
+let input = document.getElementById("msg")
+let chat = document.getElementById("chat")
+
+if(input.value.trim() === "") return
+
+let msg = document.createElement("div")
+msg.className = "message you"
+msg.innerText = "You: " + input.value
+
+chat.appendChild(msg)
+
+chat.scrollTop = chat.scrollHeight
+
+input.value = ""
+
+}
+
+function skipUser(){
+
+let chat = document.getElementById("chat")
+
+chat.innerHTML = '<div class="message stranger">Stranger: New user joined 👋</div>'
+
+}
+
+</script>
 
 </body>
+
 </html>
