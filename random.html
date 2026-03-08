@@ -152,7 +152,7 @@
   <script>
     const SUPABASE_URL = "https://hcefuiaealcgixftfric.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWZ1aWFlYWxjZ2l4ZnRmcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNjksImV4cCI6MjA4ODUyNTA2OX0.5A23xPBlvI9pd1z_xqQNQFMVZeeihp5KBhl3BK8IZrg";
-    const ROOM = "room_";
+    const ROOM = "room_" + Math.random().toString(36).slice(2, 8);
 
     const statusEl = document.getElementById("status");
     const errorEl = document.getElementById("error");
