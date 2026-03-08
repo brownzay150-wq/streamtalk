@@ -1,48 +1,27 @@
-// Firebase config
-const firebaseConfig = {
-  apiKey: "YOUR_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-};
+// Load the StreamTalk JSON data
+const jsonFile = "streamtalk_full.json.txt";
 
-firebase.initializeApp(firebaseConfig);
+fetch(jsonFile)
+  .then(res => {
+    if (!res.ok) throw new Error("Failed to load JSON file.");
+    return res.json();
+  })
+  .then(data => {
+    window.appData = data;
+    console.log("StreamTalk data loaded:", data);
+    if (typeof initApp === "function") initApp(data);
+  })
+  .catch(err => console.error("Error loading JSON:", err));
 
-const db = firebase.database();
-
-const messagesDiv = document.getElementById("messages");
-const input = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-
-let room = "global_room";
-
-// listen for messages
-db.ref("rooms/" + room).on("child_added", snapshot => {
-
-  const msg = snapshot.val();
-
-  const div = document.createElement("div");
-  div.className = "message";
-
-  div.innerText = msg.text;
-
-  messagesDiv.appendChild(div);
-
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-});
-
-// send message
-sendBtn.onclick = () => {
-
-  const text = input.value.trim();
-  if(!text) return;
-
-  db.ref("rooms/" + room).push({
-    text: text,
-    time: Date.now()
+// Example init function for chat rendering
+function initApp(data) {
+  const chatBox = document.getElementById("chatBox");
+  data.rooms.forEach(room => {
+    room.messages.forEach(msg => {
+      const div = document.createElement("div");
+      div.className = "message";
+      div.textContent = `[${msg.sender}] ${msg.text}`;
+      chatBox.appendChild(div);
+    });
   });
-
-  input.value = "";
-
-};
+}
