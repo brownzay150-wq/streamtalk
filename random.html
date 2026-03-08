@@ -34,6 +34,7 @@ footer a{color:#08f;text-decoration:none;margin:0 4px;}
       <button id="skip" class="btn">Skip</button>
       <button id="clr" class="btn">Clear</button>
       <button id="rep" class="btn">Report</button>
+      <button id="dl" class="btn">Download Logs</button>
     </div>
     <div class="badge-wrap">
       <div id="online" class="badge">Online: 0</div>
@@ -58,52 +59,65 @@ firebase.initializeApp(cfg); const db=firebase.database();
 // Elements
 const ms=document.getElementById("msgs"),txt=document.getElementById("txt");
 const status=document.getElementById("status"),online=document.getElementById("online"),conn=document.getElementById("conn");
-const send=document.getElementById("send"),skip=document.getElementById("skip"),clr=document.getElementById("clr"),rep=document.getElementById("rep");
+const send=document.getElementById("send"),skip=document.getElementById("skip"),clr=document.getElementById("clr"),rep=document.getElementById("rep"),dl=document.getElementById("dl");
 
 // Session
 let uid=sessionStorage.getItem("uid")||sessionStorage.setItem("uid","u_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("uid");
 let room=null,partner=null,connected=false,displayed={},bad=["fag","faggot","nigger","shit","asshole","bastard","damn"];
 
+// Local logs
+let logs=[];
+
+// Log function
+function logEvent(msg){
+  logs.push(new Date().toISOString()+" | "+msg);
+  db.ref("logs/"+Date.now()+"_"+Math.random().toString(36).slice(2,4)).set({user:uid,message:msg,time:Date.now()});
+}
+
 // Helper
 function add(t,c){const d=document.createElement("div");d.className=c;d.textContent=t;ms.appendChild(d);ms.scrollTop=ms.scrollHeight;}
-function setSt(t){status.textContent="Status: "+t;}
-function addOnline(n){online.textContent="Online: "+n;}
+function setSt(t){status.textContent="Status: "+t; logEvent("Status: "+t);}
+function addOnline(n){online.textContent="Online: "+n; logEvent("Online count: "+n);}
 
 // Match / Queue
 async function tryMatch(){
-if(room||connected)return; setSt("Searching..."); add("Searching...","sys");
-const w=await db.ref("waiting").once("value"); let u=w.val()||{};
-let c=Object.entries(u).filter(([k,v])=>v.id!=uid); 
-if(c.length){let [k,v]=c[0]; await db.ref("waiting/"+k).remove(); return createRoom(v.id);}
-await db.ref("waiting").push({id:uid,time:Date.now()});
+  if(room||connected)return; setSt("Searching..."); add("Searching...","sys"); logEvent("Trying to match");
+  const w=await db.ref("waiting").once("value"); let u=w.val()||{};
+  let c=Object.entries(u).filter(([k,v])=>v.id!=uid);
+  if(c.length){let [k,v]=c[0]; await db.ref("waiting/"+k).remove(); return createRoom(v.id);}
+  await db.ref("waiting").push({id:uid,time:Date.now()}); logEvent("Added to waiting");
 }
+
 async function createRoom(pid){
-room="r_"+Math.random().toString(36).slice(2,8); partner=pid; connected=true;
-await db.ref("rooms/"+room).set({users:{[uid]:true,[pid]:true},typing:{[uid]:false,[pid]:false}});
-await db.ref("assignments/"+pid).set({room:room,partner:uid});
-add("Connected to stranger","sys"); setSt("Connected"); listenRoom();
+  room="r_"+Math.random().toString(36).slice(2,8); partner=pid; connected=true;
+  await db.ref("rooms/"+room).set({users:{[uid]:true,[pid]:true},typing:{[uid]:false,[pid]:false}});
+  await db.ref("assignments/"+pid).set({room:room,partner:uid});
+  add("Connected to stranger","sys"); setSt("Connected"); listenRoom(); logEvent("Room created with "+pid);
 }
 
 // Listen
 function listenRoom(){
-if(!room)return;
-db.ref("rooms/"+room).on("value",snap=>{
-let v=snap.val()||{},uids=Object.keys(v.users||{}),t=v.typing||{}; partner=uids.find(x=>x!=uid)||null;
-if(connected&&uids.length<=1){cleanup(); add("Partner left","sys"); setSt("Idle");}
-Object.entries(v.messages||{}).forEach(([k,m])=>{if(displayed[k])return; displayed[k]=true; add(m.sender==uid?m.text:"Stranger: "+m.text,m.sender==uid?"me":"other");});
-conn.textContent="Conn: "+uids.length;
-});
+  if(!room)return;
+  db.ref("rooms/"+room).on("value",snap=>{
+    let v=snap.val()||{},uids=Object.keys(v.users||{}),t=v.typing||{}; partner=uids.find(x=>x!=uid)||null;
+    if(connected&&uids.length<=1){cleanup(); add("Partner left","sys"); setSt("Idle"); logEvent("Partner disconnected");}
+    Object.entries(v.messages||{}).forEach(([k,m])=>{if(displayed[k])return; displayed[k]=true; add(m.sender==uid?m.text:"Stranger: "+m.text,m.sender==uid?"me":"other"); logEvent("Message: "+m.text);});
+    conn.textContent="Conn: "+uids.length;
+  });
 }
 
 // Send / Skip / Clear / Report
-send.onclick=()=>{let t=txt.value.trim(); if(!t||!room||!connected)return; for(let w of bad){if(t.toLowerCase().includes(w)){alert("Bad word!"); txt.value=""; return;}} 
-db.ref("rooms/"+room+"/messages").push({sender:uid,text:t}); txt.value="";}
-skip.onclick=()=>{cleanup(); add("You skipped","sys"); tryMatch();}
-clr.onclick=()=>{ms.innerHTML=""; displayed={}; add("Chat cleared","sys");}
-rep.onclick=()=>{if(room&&partner)db.ref("reports").push({by:uid,who:partner,room:room,time:Date.now()}); add("Report submitted","sys");}
+send.onclick=()=>{let t=txt.value.trim(); if(!t||!room||!connected)return; for(let w of bad){if(t.toLowerCase().includes(w)){alert("Bad word!"); txt.value=""; logEvent("Blocked bad word: "+t); return;}} 
+db.ref("rooms/"+room+"/messages").push({sender:uid,text:t}); txt.value=""; logEvent("Sent message");}
+skip.onclick=()=>{cleanup(); add("You skipped","sys"); tryMatch(); logEvent("Skipped chat");}
+clr.onclick=()=>{ms.innerHTML=""; displayed={}; add("Chat cleared","sys"); logEvent("Cleared chat");}
+rep.onclick=()=>{if(room&&partner)db.ref("reports").push({by:uid,who:partner,room:room,time:Date.now()}); add("Report submitted","sys"); logEvent("Reported user: "+partner);}
+
+// Download logs
+dl.onclick=()=>{const blob=new Blob([logs.join("\n")],{type:"text/plain"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="streamtalk_logs.txt"; a.click(); URL.revokeObjectURL(a.href); logEvent("Downloaded logs");}
 
 // Disconnect / Cleanup
-async function cleanup(){connected=false; room=null; partner=null; await db.ref("waiting").orderByChild("id").equalTo(uid).once("value").then(s=>s.forEach(c=>c.ref.remove())); await db.ref("assignments/"+uid).remove();}
+async function cleanup(){connected=false; room=null; partner=null; await db.ref("waiting").orderByChild("id").equalTo(uid).once("value").then(s=>s.forEach(c=>c.ref.remove())); await db.ref("assignments/"+uid).remove(); logEvent("Cleanup executed");}
 
 // Typing indicator
 txt.addEventListener("input",()=>{if(room) db.ref("rooms/"+room+"/typing/"+uid).set(txt.value.length>0);})
