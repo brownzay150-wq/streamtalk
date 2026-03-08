@@ -5,26 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>StreamTalk Random Chat</title>
 <style>
-body{margin:0;padding:12px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:10px;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:12px;}
 .chat-box{background:#1c1f2e;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow-y:auto;}
-textarea{flex:1;border:none;outline:none;border-radius:12px;padding:8px;background:#2a2f45;color:white;resize:none;}
+textarea,input{flex:1;border:none;outline:none;border-radius:12px;padding:8px;background:#2a2f45;color:white;}
 button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;margin-top:4px;}
 .message{padding:6px 10px;border-radius:12px;margin:4px 0;}
 .me{background:#7c3aed;color:white;}
 .other{background:#2a2f45;color:white;}
 .system{text-align:center;color:#aaa;margin:4px 0;}
-#ownerMenu,#liveLogs{display:none;background:#1a1d2e;padding:8px;border-radius:12px;overflow-y:auto;}
-#ownerMenu{max-height:200px;flex-direction:column;gap:4px;}
-#liveLogs{max-height:150px;font-size:12px;color:#cfd3ff;}
-#copyLogs{align-self:flex-end;padding:4px 6px;border-radius:6px;background:#7c3aed;color:white;margin-bottom:4px;}
-#patrickIcon{width:36px;height:36px;position:fixed;bottom:12px;right:12px;cursor:pointer;z-index:999;}
+#ownerMenu,#liveLogs,#topicContainer,#patrickToggle{display:none;}
+#ownerMenu,#liveLogs{background:#1a1d2e;padding:10px;border-radius:12px;max-height:200px;overflow-y:auto;flex-direction:column;gap:4px;}
+#patrickToggle{position:fixed;bottom:10px;right:10px;width:48px;height:48px;cursor:pointer;}
+#logsContent{overflow-y:auto;font-size:12px;color:#cfd3ff;}
 </style>
 </head>
 <body>
 
-<img id="patrickIcon" src="71B45749-39E4-4A06-8AD8-944188FBBDCD.jpeg" title="Toggle Owner Menu">
-
 <h1>StreamTalk Chat</h1>
+
+<!-- Topic Selection -->
+<div id="topicContainer" style="display:flex;gap:6px;">
+<input id="topicInput" placeholder="Topic (e.g. gaming)">
+<select id="topTopics">
+<option value="">-- Top Topics --</option>
+<option value="gaming">Gaming</option>
+<option value="music">Music</option>
+<option value="movies">Movies</option>
+<option value="sports">Sports</option>
+<option value="anime">Anime</option>
+</select>
+<button id="topicGo">Go</button>
+</div>
 
 <div class="chat-box" id="messages"></div>
 <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
@@ -36,38 +47,26 @@ button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90d
 <!-- Owner Menu -->
 <div id="ownerMenu">
 <input id="target" placeholder="UserID / Target" style="width:100%;padding:4px;border-radius:6px;border:none;outline:none;background:#2a2f45;color:white;">
+</div>
+
+<!-- Owner Buttons -->
 <div id="ownerBtns" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
+<!-- Moderation -->
 <button onclick="ownerBan()">Ban</button>
 <button onclick="ownerTimeout()">Timeout 30s</button>
 <button onclick="ownerMod()">Add Moderator</button>
 <button onclick="ownerMute()">Mute User</button>
 <button onclick="ownerList()">List Users</button>
-<button onclick="ownerSysMsg()">System Msg</button>
+<!-- Fun / Dev -->
 <button onclick="ownerFun()">Fun Msg</button>
+<button onclick="ownerSysMsg()">System Msg</button>
 <button onclick="ownerFlood()">Flood Test</button>
-<button onclick="ownerColor()">Change Colors</button>
-<button onclick="ownerTyping()">Fake Typing</button>
+<button onclick="ownerSelfChat()">Connect Self</button>
+<button onclick="ownerDisconnect()">Disconnect</button>
+<!-- Logs -->
 <button onclick="ownerCopy()">Copy Logs</button>
 <button onclick="ownerClearLogs()">Clear Logs</button>
 <button onclick="ownerDownload()">Download Logs</button>
-<button onclick="ownerFiltered()">Filtered Msgs</button>
-<button onclick="ownerRoomInfo()">Room Info</button>
-<button onclick="ownerSelfChat()">Connect Self</button>
-<button onclick="ownerDisconnect()">Disconnect</button>
-<button onclick="ownerAutoMsg()">Auto Msg</button>
-<button onclick="ownerFakeUsers()">Fake Users</button>
-<button onclick="ownerTypingSpeed()">Typing Speed</button>
-<button onclick="ownerHighlight()">Highlight User</button>
-<button onclick="ownerEmoji()">Emoji / Stickers</button>
-<button onclick="ownerEmpty()">Force Empty Chat</button>
-<button onclick="ownerToggleFilter()">Toggle Filter</button>
-<button onclick="ownerRoomName()">Room Name Override</button>
-<button onclick="ownerRawDB()">Raw DB Snapshot</button>
-<button onclick="ownerStrangerLeave()">Stranger Left</button>
-<button onclick="ownerMultiStranger()">Multiple Strangers</button>
-<button onclick="ownerAutoReconnect()">Force Reconnect</button>
-<button onclick="ownerInjectMsg()">Inject Custom Msg</button>
-</div>
 </div>
 
 <!-- Live Logs -->
@@ -75,6 +74,9 @@ button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90d
 <button id="copyLogs">Copy All Logs</button>
 <div id="logsContent"></div>
 </div>
+
+<!-- Patrick toggle -->
+<img id="patrickToggle" src="2A5BBF4F-F891-405C-A804-72FEC273F14E.jpeg" alt="Patrick" onclick="toggleOwner()" title="Toggle Owner Menu">
 
 <footer>
 <a href="rules.html" target="_blank">Rules</a> •
@@ -91,42 +93,47 @@ firebase.initializeApp(cfg);const db=firebase.database();
 
 // --- User ---
 let uid=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("streamtalk_user_id");
-let room=null,partner=null,logs=[],mods=[],filterOn=true;
+let room=null,partner=null,logs=[],mods=[],topic="any";
 
 // --- UI ---
 const msgBox=document.getElementById("messages"),input=document.getElementById("msg");
 const sendBtn=document.getElementById("send"),skipBtn=document.getElementById("skip");
 const reportBtn=document.getElementById("report"),downloadBtn=document.getElementById("download");
-const ownerMenu=document.getElementById("ownerMenu"),patrickIcon=document.getElementById("patrickIcon");
+const ownerMenu=document.getElementById("ownerMenu"),ownerBtns=document.getElementById("ownerBtns");
 const liveLogs=document.getElementById("liveLogs"),logsContent=document.getElementById("logsContent"),copyLogs=document.getElementById("copyLogs");
+const topicInput=document.getElementById("topicInput"),topTopics=document.getElementById("topTopics"),topicGo=document.getElementById("topicGo");
 
 // --- Helpers ---
 function addSys(t){let d=document.createElement("div");d.className="system";d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push("[SYS] "+t);refreshLogs();}
 function addMsg(t,type){let d=document.createElement("div");d.className=type;d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push(`[${type}] ${t}`);refreshLogs();}
 function refreshLogs(){logsContent.innerHTML=logs.map(l=>`<div>${l}</div>`).join("");logsContent.scrollTop=logsContent.scrollHeight;}
-
-// --- Filters ---
 const badWords=["fag","faggot","nigger"];
-function filterText(t){return filterOn&&badWords.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
+function filterText(t){return badWords.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
 
-// --- Self-Test / Connect ---
+// --- Owner toggle ---
+function toggleOwner(){ownerMenu.style.display=(ownerMenu.style.display==="flex"?"none":"flex");ownerBtns.style.display=(ownerBtns.style.display==="flex"?"none":"flex");liveLogs.style.display=(liveLogs.style.display==="flex"?"none":"flex");}
+
+// --- Topic selection ---
+topicGo.onclick=()=>{topic=topicInput.value||topTopics.value||"any";joinRoom();}
+
+// --- Self-Test Chat / Topic ---
 async function joinRoom(){
-room="room_test";partner="self_test";
-addSys("Connected to self (test)");
-db.ref("rooms/"+room+"/messages").on("child_added",snap=>{let m=snap.val();if(m.sender!==uid){addMsg(m.text,"other");}});
+room="room_test_"+topic;partner="self_test_"+topic;
+addSys(`Connected to self (topic: ${topic})`);
+db.ref("rooms/"+room+"/messages").on("child_added",snap=>{let m=snap.val();if(m.sender!==uid)addMsg(m.text,"other");});
 }
 
 // --- Send ---
 sendBtn.onclick=()=>{let t=filterText(input.value.trim());if(!t||!room)return;addMsg(t,"me");db.ref("rooms/"+room+"/messages").push({sender:uid,text:t});input.value="";}
 input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
 
-// --- Skip / Report ---
-skipBtn.onclick=()=>addSys("Skipped");
-reportBtn.onclick=()=>addSys("Report sent");
-downloadBtn.onclick=()=>{let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();};
+// --- Skip / Report / Logs ---
+skipBtn.onclick=()=>addSys("Skipped");reportBtn.onclick=()=>addSys("Report sent");
+downloadBtn.onclick=()=>{let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();}
+copyLogs.onclick=()=>navigator.clipboard.writeText(logs.join("\n"));
 
-// --- Owner Menu Toggle ---
-patrickIcon.onclick=()=>{ownerMenu.style.display=(ownerMenu.style.display==="flex"?"none":"flex");liveLogs.style.display=(liveLogs.style.display==="flex"?"none":"flex");}
+// --- Owner Menu default ---
+let isOwner=true;if(isOwner)toggleOwner();
 
 // --- Boot ---
 joinRoom();
