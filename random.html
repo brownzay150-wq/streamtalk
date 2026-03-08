@@ -3,143 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamTalk</title>
+<title>StreamTalk Test Mode</title>
 <style>
-*{box-sizing:border-box;}body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;}textarea{flex:1;border:none;outline:none;border-radius:14px;padding:15px;background:#1c1f2e;color:white;min-height:56px;max-height:140px;resize:none;font-family:Arial;}button{border:none;border-radius:14px;padding:15px 18px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}button:disabled{opacity:.55;cursor:not-allowed;}
-.app{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
-.topbar{display:flex;justify-content:space-between;align-items:center;}
-.logo{font-size:30px;font-weight:800;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;color:transparent;}
-.chat-box{background:#1c1f2e;border-radius:18px;padding:14px;min-height:52vh;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;}
-.bubble-wrap{display:flex;flex-direction:column;margin:8px 0;}
-.bubble-wrap.me-wrap{align-items:flex-end;}
-.bubble-wrap.other-wrap{align-items:flex-start;}
-.message{max-width:80%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;}
-.me{background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;border-bottom-right-radius:6px;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
+.chat-container{display:flex;gap:20px;flex-wrap:wrap;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:16px;min-width:300px;flex:1;display:flex;flex-direction:column;gap:10px;}
+textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
+button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.message{padding:8px 12px;border-radius:14px;margin:4px 0;}
+.me{background:#7c3aed;color:white;border-bottom-right-radius:6px;}
 .other{background:#2a2f45;color:white;border-bottom-left-radius:6px;}
-.system{text-align:center;color:#9ca3af;margin:10px auto;}
-.badge-wrap{display:flex;gap:8px;}
-.badge{font-size:12px;padding:7px 10px;border-radius:999px;background:#2a2f45;color:#cfd3ff;}
-.secondary{background:#2a2f45;}
+.system{text-align:center;color:#aaa;margin:6px 0;}
 </style>
 </head>
 <body>
-<div class="app">
-<div class="topbar"><div class="logo">StreamTalk</div></div>
-<div class="chat-box" id="messages"><div id="emptyState" class="system">Open on two devices to test.</div></div>
 
-<div class="input-wrap" style="display:flex;gap:10px;">
-  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
-  <button id="send">Send</button>
-</div>
+<h1>StreamTalk Test Mode</h1>
+<div class="chat-container">
+  <!-- Chat 1 -->
+  <div class="chat-box" id="chat1">
+    <div class="status" id="status1">Status: Searching...</div>
+    <div class="messages" id="messages1"></div>
+    <textarea id="msg1" placeholder="Type a message..."></textarea>
+    <button id="send1">Send</button>
+    <button id="skip1">Skip</button>
+    <button id="report1">Report</button>
+  </div>
 
-<div style="display:flex;gap:10px;margin-top:8px;">
-  <button id="skip" class="secondary">Skip</button>
-  <button id="clear" class="secondary">Clear</button>
-  <button id="report" class="secondary">Report</button>
-</div>
-
-<div class="badge-wrap" style="margin-top:10px;">
-  <div id="online" class="badge">Online: 0</div>
-  <div id="status" class="badge">Idle</div>
-</div>
+  <!-- Chat 2 -->
+  <div class="chat-box" id="chat2">
+    <div class="status" id="status2">Status: Searching...</div>
+    <div class="messages" id="messages2"></div>
+    <textarea id="msg2" placeholder="Type a message..."></textarea>
+    <button id="send2">Send</button>
+    <button id="skip2">Skip</button>
+    <button id="report2">Report</button>
+  </div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamtalk-fcfd5.firebaseapp.com",databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",projectId:"streamtalk-fcfd5",storageBucket:"streamtalk-fcfd5.firebasestorage.app",messagingSenderId:"971872258888",appId:"1:971872258888:web:316fe78c5b762611d7c17d"};
-firebase.initializeApp(cfg);const db=firebase.database();
+// --- Firebase config ---
+const cfg={
+  apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",
+  authDomain:"streamtalk-fcfd5.firebaseapp.com",
+  databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",
+  projectId:"streamtalk-fcfd5",
+  storageBucket:"streamtalk-fcfd5.firebasestorage.app",
+  messagingSenderId:"971872258888",
+  appId:"1:971872258888:web:316fe78c5b762611d7c17d"
+};
+firebase.initializeApp(cfg);
+const db=firebase.database();
 
-const $=(id)=>document.getElementById(id);
-const ms=$("msg"),msgs=$("messages"),es=$("emptyState"),send=$("send"),skip=$("skip"),clr=$("clear"),report=$("report"),online=$("online"),status=$("status");
+// --- Chat 1 ---
+const chat1={id:"user1_"+Math.random().toString(36).slice(2,8),box:"messages1",msg:"msg1",status:"status1"};
+// --- Chat 2 ---
+const chat2={id:"user2_"+Math.random().toString(36).slice(2,8),box:"messages2",msg:"msg2",status:"status2"};
 
-let id=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,11))||sessionStorage.getItem("streamtalk_user_id");
-let room=null,partner=null,connected=false,displayed={},timer=null;
+// --- Helper ---
+function addMsg(chat,text,type){const m=document.createElement("div");m.className=type;m.textContent=text;document.getElementById(chat.box).appendChild(m);}
+function addSys(chat,text){const m=document.createElement("div");m.className="system";m.textContent=text;document.getElementById(chat.box).appendChild(m);}
+function setStatus(chat,text){document.getElementById(chat.status).textContent="Status: "+text;}
+function scroll(chat){const el=document.getElementById(chat.box);el.scrollTop=el.scrollHeight;}
 
-// ---------------- Functions ----------------
-const showEmpty=(v)=>es.style.display=v?"block":"none";
-const scrollBottom=()=>msgs.scrollTop=msgs.scrollHeight;
-const addSys=(t)=>{showEmpty(false);let d=document.createElement("div");d.className="system";d.textContent=t;msgs.appendChild(d);scrollBottom();};
-const addMsg=(t,type,time)=>{showEmpty(false);let w=document.createElement("div");w.className="bubble-wrap "+(type==="me"?"me-wrap":"other-wrap");let b=document.createElement("div");b.className="message "+type;b.textContent=t;let tm=document.createElement("div");tm.className="time";tm.textContent=new Date(time).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});w.appendChild(b);w.appendChild(tm);msgs.appendChild(w);scrollBottom();};
-const resetChat=()=>{msgs.innerHTML="";displayed={};showEmpty(true);};
-const setStatusText=(t)=>status.textContent=t;
-
-// ---------------- Presence ----------------
-db.ref(".info/connected").on("value",snap=>{if(snap.val()){let p=db.ref("presence/"+id);p.onDisconnect().remove();p.set({online:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});}});
-db.ref("presence").on("value",snap=>{online.textContent="Online: "+Object.keys(snap.val()||{}).length;});
-
-// ---------------- Match / Queue ----------------
-async function tryMatch(){
-if(room||connected)return;
-setStatusText("Searching");resetChat();addSys("Searching for a stranger...");
-const w=await db.ref("waiting").once("value");const users=w.val()||{};
-const candidates=Object.entries(users).filter(([k,v])=>v.userId!==id).sort((a,b)=>a[1].createdAt-b[1].createdAt);
-if(candidates.length){const [k,u]=candidates[0];const res=await db.ref("waiting/"+k).transaction(c=>c?null:undefined);if(res.committed){return createRoom(u.userId);}}
-await db.ref("waiting").push({userId:id,createdAt:Date.now()});
+// --- Simulate waiting/matching ---
+async function tryMatch(chat,otherChat){
+  setStatus(chat,"Searching...");
+  addSys(chat,"Searching for stranger...");
+  // Directly assign each other
+  chat.room="room_test";
+  chat.partner=otherChat.id;
+  otherChat.room="room_test";
+  otherChat.partner=chat.id;
+  setStatus(chat,"Connected");
+  setStatus(otherChat,"Connected");
+  addSys(chat,"Connected to stranger");
+  addSys(otherChat,"Connected to stranger");
 }
 
-// Create room
-async function createRoom(otherId){
-let r="room_"+Math.random().toString(36).slice(2,11);room=r;partner=otherId;connected=true;
-await db.ref("rooms/"+r).set({users:{[id]:true,[otherId]:true},typing:{[id]:false,[otherId]:false}});
-await db.ref("assignments/"+otherId).set({roomId:r,partnerId:id});
-resetChat();addSys("Connected to stranger");
-startRoomListeners();
+// --- Send ---
+function sendMessage(chat,otherChat){
+  const t=document.getElementById(chat.msg).value.trim();
+  if(!t) return;
+  addMsg(chat,t,"me");scroll(chat);
+  addMsg(otherChat,t,"other");scroll(otherChat);
+  document.getElementById(chat.msg).value="";
 }
 
-// Room listeners
-function startRoomListeners(){
-if(!room)return;
-db.ref("rooms/"+room).on("value",snap=>{
-let val=snap.val()||{},uids=Object.keys(val.users||{}),t=val.typing||{};
-partner=uids.find(x=>x!==id)||null;
-if(connected&&uids.length<=1){handleDisconnect();}
-Object.entries(val.messages||{}).forEach(([k,m])=>{if(displayed[k])return;displayed[k]=true;m.sender===id?addMsg(m.text,"me",m.time):m.sender==="system"?addSys(m.text):addMsg(m.text,"other",m.time);});
-typingText.textContent=partner&&t[partner]?"Stranger is typing...":"";
-});
-}
+// --- Button events ---
+document.getElementById("send1").onclick=()=>sendMessage(chat1,chat2);
+document.getElementById("send2").onclick=()=>sendMessage(chat2,chat1);
 
-// ---------------- Send / Skip ----------------
-send.addEventListener("click",()=>{sendMsg();});
-ms.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMsg();}});
-async function sendMsg(){
-let t=ms.value.trim();if(!t||!room||!connected)return;
-await db.ref("rooms/"+room+"/messages").push({sender:id,text:t,time:Date.now()});
-ms.value="";db.ref("rooms/"+room+"/typing/"+id).set(false);
-}
-skip.addEventListener("click",async()=>{setStatusText("Skipping");await cleanup();addSys("You skipped");tryMatch();});
-clr.addEventListener("click",()=>{resetChat();addSys("Chat cleared");});
+// Skip
+document.getElementById("skip1").onclick=()=>{addSys(chat1,"You skipped");addSys(chat2,"Stranger skipped");};
+document.getElementById("skip2").onclick=()=>{addSys(chat2,"You skipped");addSys(chat1,"Stranger skipped");};
 
-// ---------------- Report ----------------
-report.addEventListener("click", async ()=>{
-  if(room && partner){
-    await db.ref("reports").push({reportedBy:id,reportedUser:partner,roomId:room,time:Date.now()});
-    alert("Report submitted!");
-  } else alert("No user to report right now.");
-});
+// Report
+document.getElementById("report1").onclick=()=>addSys(chat1,"Report submitted");
+document.getElementById("report2").onclick=()=>addSys(chat2,"Report submitted");
 
-// ---------------- Disconnect / Cleanup ----------------
-async function cleanup(){
-clearTimeout(timer);
-db.ref("waiting").orderByChild("userId").equalTo(id).once("value").then(snap=>snap.forEach(c=>c.ref.remove()));
-db.ref("assignments/"+id).remove();
-if(room){db.ref("rooms/"+room+"/typing/"+id).remove();db.ref("rooms/"+room+"/users/"+id).remove();room=null;partner=null;connected=false;displayed={};}
-}
-function handleDisconnect(){setStatusText("Stranger disconnected");addSys("Reconnecting");timer=setTimeout(async()=>{await cleanup();addSys("Finding new stranger");tryMatch();},2000);}
-
-// ---------------- Typing ----------------
-ms.addEventListener("input",()=>{db.ref("rooms/"+room+"/typing/"+id).set(ms.value.trim().length>0);});
-
-// ---------------- Boot ----------------
-tryMatch();
+// Boot
+tryMatch(chat1,chat2);
 </script>
-
-<!-- Footer -->
-<footer style="margin-top:20px;text-align:center;font-size:13px;color:#aaa;">
-  <a href="rules.html" target="_blank">Rules</a> • 
-  <a href="privacy.html" target="_blank">Privacy</a> • 
-  <a href="terms.html" target="_blank">Terms</a>
-</footer>
 
 </body>
 </html>
