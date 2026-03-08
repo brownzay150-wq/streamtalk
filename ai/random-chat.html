@@ -1,1 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StreamTalk AI Chat</title>
+<style>
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:14px;min-height:50vh;max-width:600px;margin:auto;display:flex;flex-direction:column;gap:8px;}
+textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
+button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.bubble-wrap{display:flex;flex-direction:column;margin:6px 0;}
+.bubble-wrap.me-wrap{align-items:flex-end;}
+.bubble-wrap.other-wrap{align-items:flex-start;}
+.message{padding:8px 12px;border-radius:14px;margin:2px 0;}
+.me{background:#7c3aed;color:white;}
+.other{background:#2a2f45;color:white;}
+.system{text-align:center;color:#aaa;margin:6px 0;}
+</style>
+</head>
+<body>
 
+<div class="chat-box">
+  <div class="system">AI Chat Ready! Type below to start.</div>
+  <div id="messages"></div>
+  <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
+  <button id="send">Send</button>
+</div>
+
+<script>
+const ms = document.getElementById("msg");
+const msgs = document.getElementById("messages");
+
+function addMsg(text,type){
+  const w = document.createElement("div");
+  w.className = "bubble-wrap " + (type==="me"?"me-wrap":"other-wrap");
+  const b = document.createElement("div");
+  b.className = "message "+type;
+  b.textContent = text;
+  w.appendChild(b);
+  msgs.appendChild(w);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// Simple AI response
+async function aiRespond(text){
+  return new Promise(res=>{
+    setTimeout(()=>res("AI: "+text.split("").reverse().join("")), 500);
+  });
+}
+
+// Send message
+document.getElementById("send").addEventListener("click", async()=>{
+  const t = ms.value.trim();
+  if(!t) return;
+  addMsg(t,"me");
+  ms.value="";
+  const r = await aiRespond(t);
+  addMsg(r,"other");
+});
+
+// Enter key
+ms.addEventListener("keydown", e=>{
+  if(e.key==="Enter" && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById("send").click();
+  }
+});
+</script>
+
+</body>
+</html>
