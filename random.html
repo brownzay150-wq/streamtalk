@@ -3,110 +3,175 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamTalk Test Mode</title>
+<title>StreamTalk - Random Chat</title>
 <style>
-body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
-.chat-container{display:flex;gap:20px;flex-wrap:wrap;}
-.chat-box{background:#1c1f2e;border-radius:18px;padding:16px;min-width:300px;flex:1;display:flex;flex-direction:column;gap:10px;}
-textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
-button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
-.message{padding:8px 12px;border-radius:14px;margin:4px 0;}
-.me{background:#7c3aed;color:white;border-bottom-right-radius:6px;}
+body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;}
+.app{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.logo{font-size:28px;font-weight:bold;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;color:transparent;}
+.chat-box{background:#1c1f2e;border-radius:18px;padding:14px;min-height:52vh;overflow-y:auto;display:flex;flex-direction:column;}
+.bubble-wrap{display:flex;flex-direction:column;margin:8px 0;}
+.bubble-wrap.me-wrap{align-items:flex-end;}
+.bubble-wrap.other-wrap{align-items:flex-start;}
+.message{max-width:80%;padding:12px 14px;border-radius:16px;white-space:pre-wrap;}
+.me{background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;border-bottom-right-radius:6px;}
 .other{background:#2a2f45;color:white;border-bottom-left-radius:6px;}
-.system{text-align:center;color:#aaa;margin:6px 0;}
+.system{text-align:center;color:#9ca3af;margin:10px auto;}
+.actions{display:flex;gap:10px;margin-top:12px;}
+.actions button{flex:1;border:none;border-radius:14px;padding:12px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
+.badge-wrap{display:flex;gap:8px;margin-top:10px;}
+.badge{font-size:12px;padding:7px 10px;border-radius:999px;background:#2a2f45;color:#cfd3ff;}
+footer{text-align:center;font-size:13px;color:#aaa;margin-top:20px;}
+footer a{color:#aaa;text-decoration:none;margin:0 6px;}
 </style>
 </head>
 <body>
-
-<h1>StreamTalk Test Mode</h1>
-<div class="chat-container">
-  <!-- Chat 1 -->
-  <div class="chat-box" id="chat1">
-    <div class="status" id="status1">Status: Searching...</div>
-    <div class="messages" id="messages1"></div>
-    <textarea id="msg1" placeholder="Type a message..."></textarea>
-    <button id="send1">Send</button>
-    <button id="skip1">Skip</button>
-    <button id="report1">Report</button>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">StreamTalk</div>
   </div>
 
-  <!-- Chat 2 -->
-  <div class="chat-box" id="chat2">
-    <div class="status" id="status2">Status: Searching...</div>
-    <div class="messages" id="messages2"></div>
-    <textarea id="msg2" placeholder="Type a message..."></textarea>
-    <button id="send2">Send</button>
-    <button id="skip2">Skip</button>
-    <button id="report2">Report</button>
+  <div class="chat-box" id="messages">
+    <div class="system" id="emptyState">Open StreamTalk on two devices to test matching.</div>
+  </div>
+
+  <textarea id="messageInput" placeholder="Type a message..." maxlength="500"></textarea>
+
+  <div class="actions">
+    <button id="sendBtn">Send</button>
+    <button id="skipBtn">Skip</button>
+    <button id="clearBtn">Clear</button>
+    <button id="reportBtn">Report</button>
+  </div>
+
+  <div class="badge-wrap">
+    <div id="onlineBadge" class="badge">Online: 0</div>
+    <div id="statusBadge" class="badge">Idle</div>
   </div>
 </div>
+
+<footer>
+  <a href="rules.html">Rules</a>•
+  <a href="privacy.html">Privacy</a>•
+  <a href="terms.html">Terms</a>
+</footer>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
-// --- Firebase config ---
-const cfg={
-  apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",
-  authDomain:"streamtalk-fcfd5.firebaseapp.com",
-  databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",
-  projectId:"streamtalk-fcfd5",
-  storageBucket:"streamtalk-fcfd5.firebasestorage.app",
-  messagingSenderId:"971872258888",
-  appId:"1:971872258888:web:316fe78c5b762611d7c17d"
+const firebaseConfig = {
+  apiKey: "AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",
+  authDomain: "streamtalk-fcfd5.firebaseapp.com",
+  databaseURL: "https://streamtalk-fcfd5-default-rtdb.firebaseio.com",
+  projectId: "streamtalk-fcfd5",
+  storageBucket: "streamtalk-fcfd5.firebasestorage.app",
+  messagingSenderId: "971872258888",
+  appId: "1:971872258888:web:316fe78c5b762611d7c17d"
 };
-firebase.initializeApp(cfg);
-const db=firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-// --- Chat 1 ---
-const chat1={id:"user1_"+Math.random().toString(36).slice(2,8),box:"messages1",msg:"msg1",status:"status1"};
-// --- Chat 2 ---
-const chat2={id:"user2_"+Math.random().toString(36).slice(2,8),box:"messages2",msg:"msg2",status:"status2"};
+const $ = id => document.getElementById(id);
+const msgInput = $("messageInput");
+const messagesEl = $("messages");
+const emptyState = $("emptyState");
+const sendBtn = $("sendBtn");
+const skipBtn = $("skipBtn");
+const clearBtn = $("clearBtn");
+const reportBtn = $("reportBtn");
+const onlineBadge = $("onlineBadge");
+const statusBadge = $("statusBadge");
 
-// --- Helper ---
-function addMsg(chat,text,type){const m=document.createElement("div");m.className=type;m.textContent=text;document.getElementById(chat.box).appendChild(m);}
-function addSys(chat,text){const m=document.createElement("div");m.className="system";m.textContent=text;document.getElementById(chat.box).appendChild(m);}
-function setStatus(chat,text){document.getElementById(chat.status).textContent="Status: "+text;}
-function scroll(chat){const el=document.getElementById(chat.box);el.scrollTop=el.scrollHeight;}
+let myId = sessionStorage.getItem("streamtalk_user_id") || sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,11)) || sessionStorage.getItem("streamtalk_user_id");
+let roomId = null;
+let partnerId = null;
+let isConnected = false;
+let displayedMsgs = {};
+let reconnectTimer = null;
 
-// --- Simulate waiting/matching ---
-async function tryMatch(chat,otherChat){
-  setStatus(chat,"Searching...");
-  addSys(chat,"Searching for stranger...");
-  // Directly assign each other
-  chat.room="room_test";
-  chat.partner=otherChat.id;
-  otherChat.room="room_test";
-  otherChat.partner=chat.id;
-  setStatus(chat,"Connected");
-  setStatus(otherChat,"Connected");
-  addSys(chat,"Connected to stranger");
-  addSys(otherChat,"Connected to stranger");
+function showEmpty(show){emptyState.style.display = show?"block":"none";}
+function scrollBottom(){messagesEl.scrollTop = messagesEl.scrollHeight;}
+function addMsg(text,type){
+  showEmpty(false);
+  const wrap = document.createElement("div");
+  wrap.className = "bubble-wrap "+(type==="me"?"me-wrap":"other-wrap");
+  const bubble = document.createElement("div");
+  bubble.className = "message "+type;
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  scrollBottom();
+}
+function addSys(text){showEmpty(false); const d=document.createElement("div"); d.className="system"; d.textContent=text; messagesEl.appendChild(d); scrollBottom();}
+
+// Update online badge
+db.ref(".info/connected").on("value",snap=>{if(snap.val()){let p=db.ref("presence/"+myId);p.onDisconnect().remove();p.set({online:true,updatedAt:firebase.database.ServerValue.TIMESTAMP});}});
+db.ref("presence").on("value",snap=>{onlineBadge.textContent="Online: "+Object.keys(snap.val()||{}).length;});
+
+// Random match logic (simplified)
+async function tryMatch(){
+  if(roomId || isConnected) return;
+  addSys("Searching for a stranger...");
+  const waitingSnap = await db.ref("waiting").once("value");
+  const users = waitingSnap.val() || {};
+  const candidates = Object.keys(users).filter(u=>u!==myId);
+  if(candidates.length){
+    const chosenId = candidates[0];
+    await db.ref("waiting/"+chosenId).remove();
+    createRoom(chosenId);
+  } else {
+    await db.ref("waiting").push({userId:myId,createdAt:Date.now()});
+  }
 }
 
-// --- Send ---
-function sendMessage(chat,otherChat){
-  const t=document.getElementById(chat.msg).value.trim();
-  if(!t) return;
-  addMsg(chat,t,"me");scroll(chat);
-  addMsg(otherChat,t,"other");scroll(otherChat);
-  document.getElementById(chat.msg).value="";
+async function createRoom(otherId){
+  roomId = "room_"+Math.random().toString(36).slice(2,10);
+  partnerId = otherId;
+  isConnected = true;
+  addSys("Connected to stranger");
+  db.ref("rooms/"+roomId).set({users:{[myId]:true,[otherId]:true},typing:{[myId]:false,[otherId]:false}});
+  startRoomListeners();
 }
 
-// --- Button events ---
-document.getElementById("send1").onclick=()=>sendMessage(chat1,chat2);
-document.getElementById("send2").onclick=()=>sendMessage(chat2,chat1);
+function startRoomListeners(){
+  if(!roomId) return;
+  db.ref("rooms/"+roomId).on("value",snap=>{
+    const val = snap.val()||{};
+    const users = Object.keys(val.users||{});
+    partnerId = users.find(x=>x!==myId)||null;
+    if(isConnected && users.length<=1){handleDisconnect();}
+    Object.entries(val.messages||{}).forEach(([k,m])=>{if(displayedMsgs[k]) return; displayedMsgs[k]=true; m.sender===myId?addMsg(m.text,"me"):m.sender==="system"?addSys(m.text):addMsg(m.text,"other");});
+  });
+}
 
-// Skip
-document.getElementById("skip1").onclick=()=>{addSys(chat1,"You skipped");addSys(chat2,"Stranger skipped");};
-document.getElementById("skip2").onclick=()=>{addSys(chat2,"You skipped");addSys(chat1,"Stranger skipped");};
+sendBtn.addEventListener("click", async()=>{
+  const t = msgInput.value.trim();
+  if(!t || !roomId || !isConnected) return;
+  await db.ref("rooms/"+roomId+"/messages").push({sender:myId,text:t,time:Date.now()});
+  addMsg(t,"me");
+  msgInput.value="";
+});
 
-// Report
-document.getElementById("report1").onclick=()=>addSys(chat1,"Report submitted");
-document.getElementById("report2").onclick=()=>addSys(chat2,"Report submitted");
+msgInput.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
 
-// Boot
-tryMatch(chat1,chat2);
+skipBtn.addEventListener("click",async()=>{
+  addSys("You skipped the chat");
+  await cleanup();
+  tryMatch();
+});
+clearBtn.addEventListener("click",()=>{messagesEl.innerHTML=""; addSys("Chat cleared");});
+reportBtn.addEventListener("click",()=>{addSys("Report submitted");});
+
+async function cleanup(){
+  await db.ref("waiting").orderByChild("userId").equalTo(myId).once("value").then(snap=>snap.forEach(c=>c.ref.remove()));
+  await db.ref("rooms/"+roomId+"/users/"+myId).remove();
+  await db.ref("rooms/"+roomId+"/typing/"+myId).remove();
+  roomId = null; partnerId = null; isConnected = false; displayedMsgs = {};
+}
+
+function handleDisconnect(){addSys("Stranger disconnected. Reconnecting...");setTimeout(async()=>{await cleanup(); addSys("Finding new stranger..."); tryMatch();},2000);}
+
+tryMatch();
 </script>
-
 </body>
 </html>
