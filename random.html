@@ -13,19 +13,18 @@ button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90d
 .me{background:#7c3aed;color:white;}
 .other{background:#2a2f45;color:white;}
 .system{text-align:center;color:#aaa;margin:4px 0;}
+#loginModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;flex-direction:column;gap:10px;z-index:999;}
+#loginModal input{padding:8px;border-radius:8px;border:none;outline:none;background:#2a2f45;color:white;width:200px;}
+#loginModal button{padding:8px;border-radius:8px;}
 #ownerMenu{display:none;background:#1a1d2e;padding:10px;border-radius:12px;max-height:200px;overflow-y:auto;flex-direction:column;gap:4px;}
 #liveLogs{display:none;background:#1a1d2e;padding:8px;border-radius:12px;max-height:150px;overflow-y:auto;font-size:12px;color:#cfd3ff;}
 #logsContent{overflow-y:auto;}
-#toggleOwner{width:50px;cursor:pointer;margin-top:4px;}
+#copyLogs{align-self:flex-end;padding:4px 6px;border-radius:6px;background:#7c3aed;color:white;margin-bottom:4px;}
 </style>
 </head>
 <body>
 
 <h1>StreamTalk Chat</h1>
-
-<!-- Topic input -->
-<input id="topicInput" placeholder="Enter topic..." style="padding:8px;border-radius:12px;border:none;outline:none;background:#2a2f45;color:white;">
-
 <div class="chat-box" id="messages"></div>
 <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
 <button id="send">Send</button>
@@ -33,89 +32,73 @@ button{border:none;border-radius:12px;padding:6px;background:linear-gradient(90d
 <button id="report">Report</button>
 <button id="download">Download Logs</button>
 
-<!-- Owner toggle -->
-<img id="toggleOwner" src="patric_image.png" alt="Owner Menu">
+<!-- Login Modal -->
+<div id="loginModal">
+  <input id="nickname" placeholder="Enter nickname (emoji allowed)">
+  <button id="loginBtn">Join Chat</button>
+  <div id="loginMsg" style="color:#f77;"></div>
+</div>
 
+<!-- Owner Menu -->
 <div id="ownerMenu">
-  <input id="target" placeholder="UserID / Target" style="width:100%;padding:4px;border-radius:6px;border:none;outline:none;background:#2a2f45;color:white;">
+  <button onclick="alert('Owner: Ban User')">Ban</button>
+  <button onclick="alert('Owner: Timeout 30s')">Timeout 30s</button>
+  <button onclick="alert('Owner: Add Moderator')">Add Moderator</button>
+  <button onclick="alert('Owner: Mute User')">Mute</button>
 </div>
 
-<div id="ownerBtns" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
-<button onclick="ownerBan()">Ban</button>
-<button onclick="ownerTimeout()">Timeout 30s</button>
-<button onclick="ownerMod()">Add Moderator</button>
-<button onclick="ownerSysMsg()">System Msg</button>
-<button onclick="ownerFun()">Fun Msg</button>
-<button onclick="ownerCopy()">Copy Logs</button>
-<button onclick="ownerDownload()">Download Logs</button>
-<button onclick="ownerSelfChat()">Connect Self</button>
-</div>
-
+<!-- Live Logs Panel -->
 <div id="liveLogs">
   <button id="copyLogs">Copy All Logs</button>
   <div id="logsContent"></div>
 </div>
-
-<footer>
-<a href="rules.html" target="_blank">Rules</a> •
-<a href="privacy.html" target="_blank">Privacy</a> •
-<a href="terms.html" target="_blank">Terms</a>
-</footer>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 <script>
 // --- Firebase ---
 const cfg={apiKey:"AIzaSyC46DQfCDl7tVUjin-PmYfQuWL2vcj8O48",authDomain:"streamtalk-fcfd5.firebaseapp.com",databaseURL:"https://streamtalk-fcfd5-default-rtdb.firebaseio.com",projectId:"streamtalk-fcfd5",storageBucket:"streamtalk-fcfd5.firebasestorage.app",messagingSenderId:"971872258888",appId:"1:971872258888:web:316fe78c5b762611d7c17d"};
-firebase.initializeApp(cfg);
-const db=firebase.database();
-
-// --- User ---
-let uid=sessionStorage.getItem("streamtalk_user_id")||sessionStorage.setItem("streamtalk_user_id","user_"+Math.random().toString(36).slice(2,8))||sessionStorage.getItem("streamtalk_user_id");
-let room=null,partner=null,logs=[],mods=[];
-const badWords=["fag","faggot","nigger"];
-const filterText=t=>badWords.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;
+firebase.initializeApp(cfg);const db=firebase.database();
 
 // --- UI ---
-const msgBox=document.getElementById("messages"),
-      input=document.getElementById("msg"),
-      topicInput=document.getElementById("topicInput"),
-      sendBtn=document.getElementById("send"),
-      skipBtn=document.getElementById("skip"),
-      reportBtn=document.getElementById("report"),
-      downloadBtn=document.getElementById("download"),
-      toggleOwner=document.getElementById("toggleOwner"),
-      ownerMenu=document.getElementById("ownerMenu"),
-      ownerBtns=document.getElementById("ownerBtns"),
-      liveLogs=document.getElementById("liveLogs"),
-      logsContent=document.getElementById("logsContent");
+const msgBox=document.getElementById("messages"),input=document.getElementById("msg");
+const sendBtn=document.getElementById("send"),skipBtn=document.getElementById("skip");
+const reportBtn=document.getElementById("report"),downloadBtn=document.getElementById("download");
+const loginModal=document.getElementById("loginModal"),loginBtn=document.getElementById("loginBtn");
+const nicknameInput=document.getElementById("nickname"),loginMsg=document.getElementById("loginMsg");
+const ownerMenu=document.getElementById("ownerMenu");
+const liveLogs=document.getElementById("liveLogs"),logsContent=document.getElementById("logsContent"),copyLogs=document.getElementById("copyLogs");
+
+// --- Logs ---
+let logs=[],uid=null,room=null,partner=null;
 
 // --- Helpers ---
 function addSys(t){let d=document.createElement("div");d.className="system";d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push("[SYS] "+t);refreshLogs();}
 function addMsg(t,type){let d=document.createElement("div");d.className=type;d.textContent=t;msgBox.appendChild(d);msgBox.scrollTop=msgBox.scrollHeight;logs.push(`[${type}] ${t}`);refreshLogs();}
 function refreshLogs(){logsContent.innerHTML=logs.map(l=>`<div>${l}</div>`).join("");logsContent.scrollTop=logsContent.scrollHeight;}
+function filterText(t){const bad=["fag","faggot","nigger"];return bad.some(w=>t.toLowerCase().includes(w))?"[blocked]":t;}
+function getDeviceInfo(){return {ua:navigator.userAgent,screen:`${screen.width}x${screen.height}`,devId:localStorage.getItem("streamtalk_devId")||localStorage.setItem("streamtalk_devId","dev_"+Math.random().toString(36).slice(2,8))||localStorage.getItem("streamtalk_devId")};}
 
-// --- Topic Match ---
-async function tryMatch(){
-  if(room) return;
-  let topic=(topicInput.value||"random").toLowerCase();
-  addSys("Searching topic: "+topic);
-  const w=await db.ref("waiting").once("value");
-  const waiting=w.val()||{};
-  const candidates=Object.entries(waiting).filter(([k,v])=>v.userId!==uid&&v.topic===topic);
-  if(candidates.length){
-    const [k,u]=candidates[0];
-    await db.ref("waiting/"+k).remove();
-    createRoom(u.userId,topic);
-    return;
-  }
-  await db.ref("waiting").push({userId:uid,topic:topic,createdAt:Date.now()});
-  joinSelfTest(topic);
-}
+// --- Login ---
+loginModal.style.display="flex";
+loginBtn.onclick=async()=>{
+  let nick=nicknameInput.value.trim();
+  if(!nick){loginMsg.textContent="Enter a name!"; return;}
+  // check uniqueness
+  let namesSnap=await db.ref("users").once("value");
+  let names=namesSnap.val()||{};
+  if(Object.values(names).includes(nick)){loginMsg.textContent="Name taken!"; return;}
+  let dev=getDeviceInfo(); uid=dev.devId;
+  db.ref("users/"+uid).set({nick,nickTime:Date.now()});
+  loginModal.style.display="none";
+  joinRoom(nick,dev);
+  if(nick==="Zay👾💜"){ownerMenu.style.display="flex"; liveLogs.style.display="flex";}
+};
 
-function joinSelfTest(topic){
-  room="self_"+Date.now(); partner="self_test";
-  addSys("Connected to self for topic: "+topic);
+// --- Chat ---
+function joinRoom(nick,dev){
+  room="room_test"; partner="self_test";
+  addSys(`Connected as ${nick}`);
   db.ref("rooms/"+room+"/messages").on("child_added",snap=>{let m=snap.val();if(m.sender!==uid)addMsg(m.text,"other");});
 }
 
@@ -123,16 +106,10 @@ function joinSelfTest(topic){
 sendBtn.onclick=()=>{let t=filterText(input.value.trim());if(!t||!room)return;addMsg(t,"me");db.ref("rooms/"+room+"/messages").push({sender:uid,text:t});input.value="";}
 input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendBtn.click();}});
 
-// --- Skip / Report / Download ---
+// --- Skip / Report ---
 skipBtn.onclick=()=>addSys("Skipped");
 reportBtn.onclick=()=>addSys("Report sent");
 downloadBtn.onclick=()=>{let blob=new Blob([JSON.stringify(logs,null,2)],{type:"application/json"});let a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="logs_"+uid+".json";a.click();};
-
-// --- Owner Toggle ---
-toggleOwner.onclick=()=>{ownerMenu.style.display=ownerMenu.style.display==="flex"?"none":"flex";ownerBtns.style.display=ownerBtns.style.display==="flex"?"none":"flex";liveLogs.style.display=liveLogs.style.display==="flex"?"none":"flex";};
-
-// --- Boot ---
-tryMatch();
 </script>
 </body>
 </html>
