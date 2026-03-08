@@ -16,6 +16,9 @@ button{border:none;border-radius:14px;padding:8px;background:linear-gradient(90d
 .badge-wrap{display:flex;gap:8px;margin-top:6px;}
 .badge{font-size:12px;padding:4px 8px;border-radius:999px;background:#2a2f45;color:#cfd3ff;}
 #ownerMenu{display:none;background:#2a2f45;padding:12px;border-radius:12px;flex-direction:column;gap:6px;}
+#liveLogs{display:none;flex-direction:column;gap:4px;background:#1a1d2e;padding:10px;border-radius:12px;max-height:200px;overflow-y:auto;font-size:12px;color:#cfd3ff;}
+#logsContent{overflow-y:auto;}
+#copyLogs{align-self:flex-end;padding:4px 8px;border-radius:6px;background:#7c3aed;color:white;margin-bottom:4px;}
 </style>
 </head>
 <body>
@@ -46,6 +49,11 @@ button{border:none;border-radius:14px;padding:8px;background:linear-gradient(90d
   <button id="funMsgBtn">Send Fun Msg</button>
 </div>
 
+<div id="liveLogs">
+  <button id="copyLogs">Copy All Logs</button>
+  <div id="logsContent"></div>
+</div>
+
 <footer>
   <a href="rules.html" target="_blank">Rules</a>•
   <a href="privacy.html" target="_blank">Privacy</a>•
@@ -67,15 +75,19 @@ const sendBtn=document.getElementById("sendBtn"),skipBtn=document.getElementById
 const downloadBtn=document.getElementById("downloadLogs");
 const ownerMenu=document.getElementById("ownerMenu"),modUser=document.getElementById("modUser");
 const banBtn=document.getElementById("banBtn"),timeoutBtn=document.getElementById("timeoutBtn"),modAddBtn=document.getElementById("modAddBtn"),funMsgBtn=document.getElementById("funMsgBtn");
+const liveLogs=document.getElementById("liveLogs"),logsContent=document.getElementById("logsContent"),copyLogs=document.getElementById("copyLogs");
 
 // --- User ---
 let uid=sessionStorage.getItem("streamtalk_user_id");
 if(!uid){uid="user_"+Math.random().toString(36).slice(2,10);sessionStorage.setItem("streamtalk_user_id",uid);}
 let room=null,partner=null,connected=false,displayed={},logs=[],mods=[];
 
-// --- Helper Functions ---
-const addSys=t=>{let d=document.createElement("div");d.className="system";d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;logs.push("[SYS] "+t);}
-const addMsg=(t,type)=>{let d=document.createElement("div");d.className=type;d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;logs.push(`[${type}] ${t}`);}
+// --- Helpers ---
+const addSysOriginal=t=>{let d=document.createElement("div");d.className="system";d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;logs.push("[SYS] "+t);}
+const addMsgOriginal=(t,type)=>{let d=document.createElement("div");d.className=type;d.textContent=t;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;logs.push(`[${type}] ${t}`);}
+const refreshLogs=()=>{logsContent.innerHTML=logs.map(l=>`<div>${l}</div>`).join("");logsContent.scrollTop=logsContent.scrollHeight;}
+const addSys=t=>{addSysOriginal(t);refreshLogs();}
+const addMsg=(t,type)=>{addMsgOriginal(t,type);refreshLogs();}
 const setStatus=t=>{statusEl.textContent="Connected: "+t;}
 const updateBadges=()=>{db.ref("presence").once("value").then(s=>{online.textContent="Online: "+Object.keys(s.val()||{}).length;conn.textContent="Conn: "+(partner?1:0);});}
 
@@ -106,7 +118,7 @@ async function createRoom(otherId){
   msgs.innerHTML="";displayed={};addSys("Connected to stranger");listenRoom();
 }
 
-function listenRoom(){if(!room) return;db.ref("rooms/"+room).on("value",snap=>{const val=snap.val()||{},uids=Object.keys(val.users||{}),t=val.typing||{};partner=uids.find(x=>x!==uid)||null;Object.entries(val.messages||{}).forEach(([k,m])=>{if(displayed[k])return;displayed[k]=true;m.sender===uid?addMsg(m.text,"me"):addMsg(m.text,"other");});statusEl.textContent=partner&&t[partner]?"Typing...":"Connected";});}
+function listenRoom(){if(!room)return;db.ref("rooms/"+room).on("value",snap=>{const val=snap.val()||{},uids=Object.keys(val.users||{}),t=val.typing||{};partner=uids.find(x=>x!==uid)||null;Object.entries(val.messages||{}).forEach(([k,m])=>{if(displayed[k])return;displayed[k]=true;m.sender===uid?addMsg(m.text,"me"):addMsg(m.text,"other");});statusEl.textContent=partner&&t[partner]?"Typing...":"Connected";});}
 
 // --- Actions ---
 sendBtn.onclick=()=>{let t=cleanInput(input.value.trim());if(!t||!room||!connected)return;db.ref("rooms/"+room+"/messages").push({sender:uid,text:t,time:Date.now()});input.value="";}
@@ -125,15 +137,19 @@ async function cleanup(){db.ref("waiting").orderByChild("userId").equalTo(uid).o
 input.addEventListener("input",()=>{if(room)db.ref("rooms/"+room+"/typing/"+uid).set(input.value.trim().length>0);});
 
 // --- Owner Menu ---
-let isOwner=true; // Change to control owner access
-if(isOwner) ownerMenu.style.display="flex";
-banBtn.onclick=()=>{const target=modUser.value.trim();if(target)db.ref("bans/"+target).set(true);addSys("Banned: "+target);}
-timeoutBtn.onclick=()=>{const target=modUser.value.trim();if(!target) return;addSys("Timeout: "+target);setTimeout(()=>addSys("Timeout ended: "+target),30000);}
-modAddBtn.onclick=()=>{const target=modUser.value.trim();if(target&&!mods.includes(target)){mods.push(target);addSys("Moderator added: "+target);}}
+let isOwner=true; // Toggle to false to hide owner panel
+if(isOwner){ownerMenu.style.display="flex";liveLogs.style.display="flex";}
+banBtn.onclick=()=>{const t=modUser.value.trim();if(t)db.ref("bans/"+t).set(true);addSys("Banned: "+t);}
+timeoutBtn.onclick=()=>{const t=modUser.value.trim();if(!t)return;addSys("Timeout: "+t);setTimeout(()=>addSys("Timeout ended: "+t),30000);}
+modAddBtn.onclick=()=>{const t=modUser.value.trim();if(t&&!mods.includes(t)){mods.push(t);addSys("Moderator added: "+t);}}
 funMsgBtn.onclick=()=>{if(room)db.ref("rooms/"+room+"/messages").push({sender:"system",text:"Fun message from owner!"});}
+
+// --- Copy Logs ---
+copyLogs.onclick=()=>{if(!logs.length)return alert("No logs yet!");navigator.clipboard.writeText(logs.join("\n")).then(()=>alert("Logs copied!"));}
 
 // --- Boot ---
 tryMatch();
 </script>
+
 </body>
 </html>
