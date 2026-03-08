@@ -127,7 +127,9 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
     const SUPABASE_URL = 'https://hcefiuiaealcgixftfric.supabase.co'
-    const SUPABASE_KEY = 'sb_publishable_5T9RDsl6x-ITyJ88HD0uyg_BPPBuLE-'
+
+    // PASTE YOUR FULL SUPABASE PUBLISHABLE KEY BETWEEN THE QUOTES BELOW
+    const SUPABASE_KEY = 'PASTE_YOUR_FULL_PUBLISHABLE_KEY_HERE'
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
@@ -201,7 +203,6 @@
       setStatus('Connecting to Supabase…')
 
       const loaded = await loadOldMessages()
-
       if(!loaded) return
 
       setStatus('Connected to room: ' + room, 'success')
@@ -226,9 +227,7 @@
             }
           }
         )
-        .subscribe((state) => {
-          console.log('Realtime status:', state)
-        })
+        .subscribe()
     }
 
     sendBtn.addEventListener('click', sendMessage)
