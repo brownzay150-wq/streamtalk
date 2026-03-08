@@ -1,86 +1,28 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>StreamTalk</title>
-
-<style>
-
-body{
-background:#0f0f14;
-color:white;
-font-family:Arial;
-margin:0;
-padding:20px;
-}
-
-h1{
-font-size:42px;
-background:linear-gradient(90deg,#7c3aed,#ec4899);
--webkit-background-clip:text;
-color:transparent;
-}
-
-.subtitle{
-color:#aaa;
-margin-bottom:30px;
-}
-
-.card{
-background:#1c1f2e;
-padding:25px;
-border-radius:16px;
-margin-bottom:25px;
-}
-
-button{
-width:100%;
-padding:16px;
-border:none;
-border-radius:12px;
-font-size:16px;
-margin-top:15px;
-background:linear-gradient(90deg,#7c3aed,#ec4899);
-color:white;
-}
-
-</style>
+<link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-
 <h1>StreamTalk</h1>
-<p class="subtitle">Connect • Watch • Chat</p>
+<button id="joinRandom">Join Random Chat</button>
+<button id="ownerMenuBtn">Owner Menu</button>
 
-<div class="card">
-<h2>Random Talk</h2>
-<p>Jump into a random conversation instantly.</p>
-<a href="random.html">
-<button>Start Chat</button>
-</a>
+<div id="chatBox" class="chat-box"></div>
+<textarea id="chatInput" placeholder="Type your message..."></textarea>
+<button id="sendBtn">Send</button>
+
+<div id="ownerMenu" class="owner-panel">
+  <p>Owner Controls</p>
 </div>
 
-<div class="card">
-<h2>Watch Streams</h2>
-<p>Watch live creators and join the chat.</p>
-<button>Browse Streams</button>
+<div id="liveLogs" class="log-panel">
+  <div id="logsContent"></div>
 </div>
 
-<div class="card">
-<h2>Communities</h2>
-<p>Find people with the same interests.</p>
-<button>Explore</button>
-</div>
-
-<!-- AI Chat Card -->
-<div class="card">
-<h2>AI Chat</h2>
-<p>Talk to an AI to test the chat interface.</p>
-<a href="ai/random-chat.html">
-<button>Open AI Chat</button>
-</a>
-</div>
-
+<script type="module" src="app.js"></script>
 </body>
 </html>
