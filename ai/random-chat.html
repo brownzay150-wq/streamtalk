@@ -3,95 +3,109 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StreamTalk AI Chat</title>
+<title>StreamTalk AI Test</title>
 <style>
-body{margin:0;padding:16px;font-family:Arial;background:#0f0f14;color:white;}
-.chat-box{background:#1c1f2e;border-radius:18px;padding:14px;min-height:50vh;max-width:600px;margin:auto;display:flex;flex-direction:column;gap:8px;}
-textarea{flex:1;border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
+body{margin:0;padding:20px;font-family:Arial;background:#0f0f14;color:white;display:flex;flex-direction:column;gap:20px;}
+h1{text-align:center;font-size:36px;background:linear-gradient(90deg,#7c3aed,#ec4899);-webkit-background-clip:text;color:transparent;}
+.chat-box{background:#1c1f2e;padding:16px;border-radius:18px;max-width:500px;margin:auto;display:flex;flex-direction:column;gap:10px;}
+.messages{flex:1;overflow-y:auto;max-height:50vh;padding:8px;display:flex;flex-direction:column;gap:6px;}
+.message{padding:8px 12px;border-radius:14px;}
+.me{background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;align-self:flex-end;}
+.ai{background:#2a2f45;color:white;align-self:flex-start;}
+textarea{border:none;outline:none;border-radius:14px;padding:10px;background:#2a2f45;color:white;resize:none;}
 button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90deg,#7c3aed,#ec4899);color:white;cursor:pointer;}
-.bubble-wrap{display:flex;flex-direction:column;margin:6px 0;}
-.bubble-wrap.me-wrap{align-items:flex-end;}
-.bubble-wrap.other-wrap{align-items:flex-start;}
-.message{padding:8px 12px;border-radius:14px;margin:2px 0;}
-.me{background:#7c3aed;color:white;}
-.other{background:#2a2f45;color:white;}
-.system{text-align:center;color:#aaa;margin:6px 0;}
-.actions{display:flex;gap:10px;margin-top:8px;}
-.actions button{flex:1;}
-footer{text-align:center;color:#aaa;font-size:13px;margin-top:20px;}
-footer a{color:#aaa;text-decoration:none;margin:0 4px;}
+.badge-wrap{margin-top:10px;text-align:center;}
+footer{text-align:center;color:#aaa;margin-top:20px;font-size:13px;}
+footer a{color:#08f;margin:0 5px;text-decoration:none;}
 </style>
 </head>
 <body>
 
+<h1>StreamTalk AI Chat</h1>
+
 <div class="chat-box">
-  <div class="system">AI Chat Ready! Type below to start.</div>
-  <div id="messages"></div>
+  <div class="messages" id="messages">
+    <div class="ai">AI Chat Ready! Type below to start.</div>
+  </div>
   <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
-  <div class="actions">
+  <div style="display:flex;gap:10px;">
     <button id="send">Send</button>
     <button id="skip">Skip</button>
     <button id="clear">Clear</button>
   </div>
 </div>
 
+<div class="badge-wrap">AI Test Mode</div>
+
 <footer>
-  <a href="../rules.html" target="_blank">Rules</a>•
-  <a href="../privacy.html" target="_blank">Privacy</a>•
+  <a href="../rules.html" target="_blank">Rules</a> • 
+  <a href="../privacy.html" target="_blank">Privacy</a> • 
   <a href="../terms.html" target="_blank">Terms</a>
 </footer>
 
 <script>
-// Elements
-const ms = document.getElementById("msg");
-const msgs = document.getElementById("messages");
-const send = document.getElementById("send");
-const skip = document.getElementById("skip");
-const clearBtn = document.getElementById("clear");
+// Helper functions
+const messages = document.getElementById("messages");
+const msgInput = document.getElementById("msg");
 
-// Helpers
-function addMsg(text,type){
-  const w = document.createElement("div");
-  w.className = "bubble-wrap " + (type==="me"?"me-wrap":"other-wrap");
-  const b = document.createElement("div");
-  b.className = "message "+type;
-  b.textContent = text;
-  w.appendChild(b);
-  msgs.appendChild(w);
-  msgs.scrollTop = msgs.scrollHeight;
-}
-function addSys(text){const d=document.createElement("div");d.className="system";d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
-
-// AI response (simple for testing)
-async function aiRespond(text){
-  return new Promise(res=>setTimeout(()=>res("AI: "+text.split("").reverse().join("")),500));
+function addMessage(text,type){
+  const m = document.createElement("div");
+  m.className = type;
+  m.textContent = text;
+  messages.appendChild(m);
+  messages.scrollTop = messages.scrollHeight;
 }
 
-// Send message
-send.addEventListener("click", async()=>{
-  const t = ms.value.trim();
+// Basic AI response logic
+function getAIResponse(text){
+  text = text.toLowerCase();
+  // Greetings
+  if(/hello|hi|hey/.test(text)) return "Hello! How's it going?";
+  // Math
+  const mathMatch = text.match(/(\d+)\s*(\+|\-|\*|x|\/)\s*(\d+)/);
+  if(mathMatch){
+    let a = parseFloat(mathMatch[1]);
+    let op = mathMatch[2];
+    let b = parseFloat(mathMatch[3]);
+    let res;
+    if(op==='+' ) res=a+b;
+    else if(op==='-') res=a-b;
+    else if(op==='*'||op==='x') res=a*b;
+    else if(op==='/' ) res=a/b;
+    return "Answer: "+res;
+  }
+  // Default
+  return "Interesting! Tell me more.";
+}
+
+// Send button
+document.getElementById("send").addEventListener("click",()=>{
+  let t = msgInput.value.trim();
   if(!t) return;
-  addMsg(t,"me");
-  ms.value="";
-  const r = await aiRespond(t);
-  addMsg(r,"other");
-});
-
-// Enter key to send
-ms.addEventListener("keydown", e=>{
-  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send.click(); }
-});
-
-// Skip button
-skip.addEventListener("click", ()=>{
-  addSys("You skipped the AI chat.");
-  msgs.innerHTML="";
+  addMessage(t,"me");
+  let reply = getAIResponse(t);
+  setTimeout(()=>addMessage(reply,"ai"),300); // slight delay for realism
+  msgInput.value="";
 });
 
 // Clear button
-clearBtn.addEventListener("click", ()=>{
-  msgs.innerHTML="";
-  addSys("Chat cleared.");
+document.getElementById("clear").addEventListener("click",()=>{
+  messages.innerHTML="";
+  addMessage("AI Chat Ready! Type below to start.","ai");
+});
+
+// Skip button
+document.getElementById("skip").addEventListener("click",()=>{
+  addMessage("You skipped this conversation.","me");
+  addMessage("AI is waiting for next message.","ai");
+});
+
+// Enter key
+msgInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter" && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById("send").click();
+  }
 });
 </script>
 
