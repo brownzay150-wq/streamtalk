@@ -1,7 +1,7 @@
 const chatBox = document.getElementById("chatBox");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
-const ownerBtn = document.getElementById("ownerMenuBtn");
+const ownerMenuBtn = document.getElementById("ownerMenuBtn");
 const ownerMenu = document.getElementById("ownerMenu");
 const joinRandom = document.getElementById("joinRandom");
 
@@ -9,25 +9,30 @@ if (ownerMenu) {
   ownerMenu.style.display = "none";
 }
 
-if (ownerBtn) {
-  ownerBtn.addEventListener("click", () => {
-    ownerMenu.style.display =
-      ownerMenu.style.display === "none" ? "block" : "none";
+if (ownerMenuBtn) {
+  ownerMenuBtn.addEventListener("click", () => {
+    if (ownerMenu.style.display === "none") {
+      ownerMenu.style.display = "block";
+    } else {
+      ownerMenu.style.display = "none";
+    }
   });
 }
 
-if (sendBtn) {
+if (sendBtn && chatInput && chatBox) {
   sendBtn.addEventListener("click", () => {
     const text = chatInput.value.trim();
     if (!text) return;
 
     const msg = document.createElement("div");
     msg.textContent = text;
-    msg.style.padding = "10px";
-    msg.style.marginBottom = "8px";
     msg.style.background = "#1e293b";
-    msg.style.borderRadius = "10px";
     msg.style.color = "white";
+    msg.style.padding = "10px 14px";
+    msg.style.borderRadius = "12px";
+    msg.style.marginBottom = "10px";
+    msg.style.maxWidth = "80%";
+    msg.style.wordBreak = "break-word";
 
     chatBox.appendChild(msg);
     chatInput.value = "";
@@ -35,16 +40,17 @@ if (sendBtn) {
   });
 }
 
-if (joinRandom) {
+if (joinRandom && chatBox) {
   joinRandom.addEventListener("click", () => {
-    const msg = document.createElement("div");
-    msg.textContent = "Connecting to random user...";
-    msg.style.padding = "10px";
-    msg.style.marginBottom = "8px";
-    msg.style.background = "#0f172a";
-    msg.style.borderRadius = "10px";
-    msg.style.color = "white";
+    const status = document.createElement("div");
+    status.textContent = "Connecting to random user...";
+    status.style.background = "#0f172a";
+    status.style.color = "#94a3b8";
+    status.style.padding = "10px 14px";
+    status.style.borderRadius = "12px";
+    status.style.marginBottom = "10px";
 
-    chatBox.appendChild(msg);
+    chatBox.appendChild(status);
+    chatBox.scrollTop = chatBox.scrollHeight;
   });
 }
