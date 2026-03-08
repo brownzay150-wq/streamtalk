@@ -5,6 +5,7 @@
 <title>Random Talk</title>
 
 <style>
+
 body{
 background:#0b0b14;
 color:white;
@@ -34,14 +35,27 @@ border-radius:12px;
 padding:12px;
 overflow:auto;
 margin-bottom:12px;
+display:flex;
+flex-direction:column;
 }
 
 .message{
-background:#1b2540;
-padding:10px 12px;
-border-radius:10px;
+padding:10px 14px;
+border-radius:14px;
 margin-bottom:8px;
+max-width:70%;
 word-break:break-word;
+}
+
+.you{
+background:linear-gradient(90deg,#7c3aed,#ec4899);
+align-self:flex-end;
+text-align:right;
+}
+
+.stranger{
+background:#1b2540;
+align-self:flex-start;
 }
 
 input{
@@ -74,15 +88,14 @@ background:#333;
 .status{
 color:#9ca3af;
 margin-bottom:10px;
-font-size:15px;
 }
 
 .error{
 color:#ff6b6b;
 margin-bottom:10px;
-font-size:15px;
 white-space:pre-wrap;
 }
+
 </style>
 </head>
 
@@ -102,158 +115,195 @@ white-space:pre-wrap;
 <button id="reloadBtn" class="secondary">Reload Room</button>
 
 <script>
-const SUPABASE_URL = "https://hcefuiaealcgixftfric.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWZ1aWFlYWxjZ2l4ZnRmcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNjksImV4cCI6MjA4ODUyNTA2OX0.5A23xPBlvI9pd1z_xqQNQFMVZeeihp5KBhl3BK8IZrg";
-const ROOM = "test_room";
 
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
-const chatEl = document.getElementById("chat");
-const inputEl = document.getElementById("messageInput");
-const sendBtn = document.getElementById("sendBtn");
-const reloadBtn = document.getElementById("reloadBtn");
+const SUPABASE_URL = "https://hcefiuiaealcgixftfric.supabase.co"
+
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZWZ1aWFlYWxjZ2l4ZnRmcmljIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDkwNjksImV4cCI6MjA4ODUyNTA2OX0.5A23xPBlvI9pd1z_xqQNQFMVZeeihp5KBhl3BK8IZrg"
+
+const ROOM = "test_room"
+
+const statusEl = document.getElementById("status")
+const errorEl = document.getElementById("error")
+const chatEl = document.getElementById("chat")
+const inputEl = document.getElementById("messageInput")
+const sendBtn = document.getElementById("sendBtn")
+const reloadBtn = document.getElementById("reloadBtn")
 
 function setStatus(msg){
-  statusEl.textContent = msg;
+statusEl.textContent = msg
 }
 
 function setError(msg){
-  errorEl.textContent = msg || "";
+errorEl.textContent = msg || ""
 }
 
 function clearError(){
-  errorEl.textContent = "";
+errorEl.textContent = ""
 }
 
 function renderMessages(rows){
-  chatEl.innerHTML = "";
-  rows.forEach(row => {
-    const div = document.createElement("div");
-    div.className = "message";
-    div.textContent = row.message || "";
-    chatEl.appendChild(div);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
+
+chatEl.innerHTML=""
+
+rows.forEach(row=>{
+
+const div=document.createElement("div")
+div.className="message"
+
+if(row.message.startsWith("You:")){
+div.classList.add("you")
+div.textContent=row.message.replace("You: ","")
+}else{
+div.classList.add("stranger")
+div.textContent=row.message
+}
+
+chatEl.appendChild(div)
+
+})
+
+chatEl.scrollTop=chatEl.scrollHeight
+
 }
 
 async function supabaseGet(path){
-  const res = await fetch(SUPABASE_URL + path, {
-    method: "GET",
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": "Bearer " + SUPABASE_KEY,
-      "Accept": "application/json"
-    }
-  });
 
-  const text = await res.text();
-  let data;
+const res = await fetch(SUPABASE_URL + path,{
+method:"GET",
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Accept":"application/json"
+}
+})
 
-  try{
-    data = text ? JSON.parse(text) : null;
-  }catch(e){
-    data = text;
-  }
+const text=await res.text()
 
-  if(!res.ok){
-    throw new Error(typeof data === "string" ? data : JSON.stringify(data));
-  }
+let data
 
-  return data;
+try{
+data=text?JSON.parse(text):null
+}catch(e){
+data=text
 }
 
-async function supabasePost(path, body){
-  const res = await fetch(SUPABASE_URL + path, {
-    method: "POST",
-    headers: {
-      "apikey": SUPABASE_KEY,
-      "Authorization": "Bearer " + SUPABASE_KEY,
-      "Content-Type": "application/json",
-      "Prefer": "return=representation"
-    },
-    body: JSON.stringify(body)
-  });
+if(!res.ok){
+throw new Error(typeof data==="string"?data:JSON.stringify(data))
+}
 
-  const text = await res.text();
-  let data;
+return data
 
-  try{
-    data = text ? JSON.parse(text) : null;
-  }catch(e){
-    data = text;
-  }
+}
 
-  if(!res.ok){
-    throw new Error(typeof data === "string" ? data : JSON.stringify(data));
-  }
+async function supabasePost(path,body){
 
-  return data;
+const res=await fetch(SUPABASE_URL+path,{
+method:"POST",
+headers:{
+"apikey":SUPABASE_KEY,
+"Authorization":"Bearer "+SUPABASE_KEY,
+"Content-Type":"application/json",
+"Prefer":"return=representation"
+},
+body:JSON.stringify(body)
+})
+
+const text=await res.text()
+
+let data
+
+try{
+data=text?JSON.parse(text):null
+}catch(e){
+data=text
+}
+
+if(!res.ok){
+throw new Error(typeof data==="string"?data:JSON.stringify(data))
+}
+
+return data
+
 }
 
 async function loadMessages(){
-  setStatus("Loading messages...");
-  clearError();
 
-  try{
-    const rows = await supabaseGet(
-      "/rest/v1/messages?select=id,message,room,created_at&room=eq." +
-      encodeURIComponent(ROOM) +
-      "&order=created_at.asc"
-    );
+setStatus("Loading messages...")
+clearError()
 
-    renderMessages(Array.isArray(rows) ? rows : []);
-    setStatus("Connected");
-  }catch(err){
-    setError("Load failed: " + err.message);
-    setStatus("Load failed");
-  }
+try{
+
+const rows=await supabaseGet(
+"/rest/v1/messages?select=id,message,room,created_at&room=eq."+encodeURIComponent(ROOM)+"&order=created_at.asc"
+)
+
+renderMessages(Array.isArray(rows)?rows:[])
+setStatus("Connected")
+
+}catch(err){
+
+setError("Load failed: "+err.message)
+setStatus("Load failed")
+
+}
+
 }
 
 async function sendMessage(){
-  const text = inputEl.value.trim();
 
-  if(!text){
-    setError("Type a message first");
-    return;
-  }
+const text=inputEl.value.trim()
 
-  setStatus("Sending...");
-  clearError();
-  sendBtn.disabled = true;
+if(!text){
+setError("Type a message first")
+return
+}
 
-  try{
-    await supabasePost("/rest/v1/messages", [
-      {
-        message: text,
-        room: ROOM
-      }
-    ]);
+setStatus("Sending...")
+clearError()
+sendBtn.disabled=true
 
-    inputEl.value = "";
-    await loadMessages();
-  }catch(err){
-    setError("Send failed: " + err.message);
-    setStatus("Send failed");
-  }
+try{
 
-  sendBtn.disabled = false;
+await supabasePost("/rest/v1/messages",[
+{
+message:"You: "+text,
+room:ROOM
+}
+])
+
+inputEl.value=""
+await loadMessages()
+
+}catch(err){
+
+setError("Send failed: "+err.message)
+setStatus("Send failed")
+
+}
+
+sendBtn.disabled=false
+
 }
 
 function start(){
-  setStatus("Connecting...");
-  loadMessages();
-  setInterval(loadMessages, 2000);
+
+setStatus("Connecting...")
+loadMessages()
+setInterval(loadMessages,2000)
+
 }
 
-sendBtn.addEventListener("click", sendMessage);
-reloadBtn.addEventListener("click", loadMessages);
-inputEl.addEventListener("keydown", function(e){
-  if(e.key === "Enter"){
-    sendMessage();
-  }
-});
+sendBtn.addEventListener("click",sendMessage)
+reloadBtn.addEventListener("click",loadMessages)
 
-start();
+inputEl.addEventListener("keydown",function(e){
+if(e.key==="Enter"){
+sendMessage()
+}
+})
+
+start()
+
 </script>
 
 </body>
