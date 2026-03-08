@@ -1,35 +1,33 @@
+const joinRandom = document.getElementById("joinRandom");
+const ownerMenuBtn = document.getElementById("ownerMenuBtn");
+const ownerMenu = document.getElementById("ownerMenu");
 const chatBox = document.getElementById("chatBox");
 const chatInput = document.getElementById("chatInput");
 const sendBtn = document.getElementById("sendBtn");
-const ownerBtn = document.getElementById("ownerMenuBtn");
-const ownerMenu = document.getElementById("ownerMenu");
 
-let ownerOpen = false;
+ownerMenu.style.display = "none";
 
-ownerBtn.onclick = () => {
-  ownerOpen = !ownerOpen;
-  ownerMenu.style.display = ownerOpen ? "block" : "none";
-};
+ownerMenuBtn.addEventListener("click", () => {
+  ownerMenu.style.display =
+    ownerMenu.style.display === "none" ? "block" : "none";
+});
 
-sendBtn.onclick = sendMessage;
-
-function sendMessage() {
+sendBtn.addEventListener("click", () => {
   const text = chatInput.value.trim();
   if (!text) return;
 
   const msg = document.createElement("div");
   msg.textContent = text;
-  msg.style.padding = "8px";
-  msg.style.margin = "5px 0";
-  msg.style.background = "#1e1e1e";
-  msg.style.borderRadius = "8px";
+  msg.style.padding = "10px";
+  msg.style.margin = "8px 0";
+  msg.style.background = "#222";
+  msg.style.color = "#fff";
+  msg.style.borderRadius = "10px";
 
   chatBox.appendChild(msg);
-
   chatInput.value = "";
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
+});
 
-document.getElementById("joinRandom").onclick = () => {
-  alert("Random chat coming next build 🚀");
-};
+joinRandom.addEventListener("click", () => {
+  alert("Random chat system not connected yet.");
+});
