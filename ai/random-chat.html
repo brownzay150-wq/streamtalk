@@ -16,6 +16,10 @@ button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90
 .me{background:#7c3aed;color:white;}
 .other{background:#2a2f45;color:white;}
 .system{text-align:center;color:#aaa;margin:6px 0;}
+.actions{display:flex;gap:10px;margin-top:8px;}
+.actions button{flex:1;}
+footer{text-align:center;color:#aaa;font-size:13px;margin-top:20px;}
+footer a{color:#aaa;text-decoration:none;margin:0 4px;}
 </style>
 </head>
 <body>
@@ -24,13 +28,28 @@ button{border:none;border-radius:14px;padding:10px;background:linear-gradient(90
   <div class="system">AI Chat Ready! Type below to start.</div>
   <div id="messages"></div>
   <textarea id="msg" placeholder="Type a message..." maxlength="500"></textarea>
-  <button id="send">Send</button>
+  <div class="actions">
+    <button id="send">Send</button>
+    <button id="skip">Skip</button>
+    <button id="clear">Clear</button>
+  </div>
 </div>
 
+<footer>
+  <a href="../rules.html" target="_blank">Rules</a>•
+  <a href="../privacy.html" target="_blank">Privacy</a>•
+  <a href="../terms.html" target="_blank">Terms</a>
+</footer>
+
 <script>
+// Elements
 const ms = document.getElementById("msg");
 const msgs = document.getElementById("messages");
+const send = document.getElementById("send");
+const skip = document.getElementById("skip");
+const clearBtn = document.getElementById("clear");
 
+// Helpers
 function addMsg(text,type){
   const w = document.createElement("div");
   w.className = "bubble-wrap " + (type==="me"?"me-wrap":"other-wrap");
@@ -41,16 +60,15 @@ function addMsg(text,type){
   msgs.appendChild(w);
   msgs.scrollTop = msgs.scrollHeight;
 }
+function addSys(text){const d=document.createElement("div");d.className="system";d.textContent=text;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;}
 
-// Simple AI response
+// AI response (simple for testing)
 async function aiRespond(text){
-  return new Promise(res=>{
-    setTimeout(()=>res("AI: "+text.split("").reverse().join("")), 500);
-  });
+  return new Promise(res=>setTimeout(()=>res("AI: "+text.split("").reverse().join("")),500));
 }
 
 // Send message
-document.getElementById("send").addEventListener("click", async()=>{
+send.addEventListener("click", async()=>{
   const t = ms.value.trim();
   if(!t) return;
   addMsg(t,"me");
@@ -59,12 +77,21 @@ document.getElementById("send").addEventListener("click", async()=>{
   addMsg(r,"other");
 });
 
-// Enter key
+// Enter key to send
 ms.addEventListener("keydown", e=>{
-  if(e.key==="Enter" && !e.shiftKey){
-    e.preventDefault();
-    document.getElementById("send").click();
-  }
+  if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); send.click(); }
+});
+
+// Skip button
+skip.addEventListener("click", ()=>{
+  addSys("You skipped the AI chat.");
+  msgs.innerHTML="";
+});
+
+// Clear button
+clearBtn.addEventListener("click", ()=>{
+  msgs.innerHTML="";
+  addSys("Chat cleared.");
 });
 </script>
 
