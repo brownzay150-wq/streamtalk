@@ -3,7 +3,9 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Random Talk</title>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 body{
 background:#0b0b14;
@@ -12,16 +14,14 @@ font-family:sans-serif;
 padding:20px;
 margin:0;
 }
-a{
-color:#7c3aed;
-}
+
 h1{
 background:linear-gradient(90deg,#7c3aed,#ec4899);
 -webkit-background-clip:text;
 -webkit-text-fill-color:transparent;
 font-size:38px;
-margin:24px 0 10px;
 }
+
 .chatbox{
 height:320px;
 background:#111827;
@@ -30,16 +30,16 @@ padding:12px;
 overflow:auto;
 margin-bottom:12px;
 }
+
 .message{
 background:#1b2540;
 padding:8px 10px;
 border-radius:8px;
 margin-bottom:6px;
-word-break:break-word;
 }
+
 input{
 width:100%;
-box-sizing:border-box;
 padding:14px;
 border-radius:10px;
 border:none;
@@ -48,6 +48,7 @@ color:white;
 margin-bottom:10px;
 font-size:16px;
 }
+
 button{
 width:100%;
 padding:14px;
@@ -58,29 +59,32 @@ color:white;
 font-size:16px;
 margin-bottom:10px;
 }
+
 .secondary{
-background:#2d2d35;
+background:#333;
 }
-.error{
-color:#ff6b6b;
-margin-bottom:10px;
-white-space:pre-wrap;
-}
+
 .status{
 color:#9ca3af;
 margin-bottom:10px;
 }
+
+.error{
+color:#ff6b6b;
+margin-bottom:10px;
+}
+
 .log{
-color:#cbd5e1;
-font-size:14px;
 background:#0f172a;
 padding:10px;
 border-radius:10px;
-white-space:pre-wrap;
 margin-bottom:12px;
+font-size:14px;
+white-space:pre-wrap;
 }
 </style>
 </head>
+
 <body>
 
 <a href="index.html">← Back</a>
@@ -98,8 +102,10 @@ margin-bottom:12px;
 <button id="reloadBtn" class="secondary">Reload Room</button>
 
 <script>
+
 const SUPABASE_URL = "https://hcefiuiaeaelcgixftfric.supabase.co";
 const SUPABASE_KEY = "sb_publishable_5T9RDsI6x-ITyJ88HD0uyg_BPPBuLE-";
+
 const room = "test_room";
 
 const statusEl = document.getElementById("status");
@@ -110,130 +116,116 @@ const inputEl = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 const reloadBtn = document.getElementById("reloadBtn");
 
-let supabase = null;
-
 function log(msg){
-  logEl.textContent += msg + "\n";
+logEl.textContent += msg + "\n";
 }
 
 function setStatus(msg){
-  statusEl.textContent = msg;
-  log("STATUS: " + msg);
+statusEl.textContent = msg;
+log("STATUS: " + msg);
 }
 
 function setError(msg){
-  errorEl.textContent = msg || "";
-  if(msg) log("ERROR: " + msg);
+errorEl.textContent = msg;
+if(msg) log("ERROR: " + msg);
 }
 
-function renderMessages(rows){
-  chatEl.innerHTML = "";
-  rows.forEach(row => {
-    const div = document.createElement("div");
-    div.className = "message";
-    div.textContent = row.message;
-    chatEl.appendChild(div);
-  });
-  chatEl.scrollTop = chatEl.scrollHeight;
+function addMessage(text){
+const div = document.createElement("div");
+div.className = "message";
+div.textContent = text;
+chatEl.appendChild(div);
 }
 
 async function loadMessages(){
-  setStatus("Loading messages...");
-  setError("");
 
-  try{
-    const result = await supabase
-      .from("messages")
-      .select("id,message,room,created_at")
-      .eq("room", room)
-      .order("created_at", { ascending: true });
+setStatus("Loading messages...");
 
-    log("loadMessages returned");
+try{
 
-    if(result.error){
-      setError("Load error: " + result.error.message);
-      setStatus("Load failed");
-      return;
-    }
+const { data, error } = await supabase
+.from("messages")
+.select("*")
+.eq("room", room)
+.order("created_at", { ascending: true });
 
-    renderMessages(result.data || []);
-    setStatus("Connected");
-    log("Loaded " + (result.data ? result.data.length : 0) + " messages");
-  }catch(err){
-    setError("Load catch: " + err.message);
-    setStatus("Load crashed");
-  }
+if(error){
+setError(error.message);
+return;
+}
+
+chatEl.innerHTML="";
+
+data.forEach(msg=>{
+addMessage(msg.message);
+});
+
+chatEl.scrollTop = chatEl.scrollHeight;
+
+setStatus("Connected");
+
+}catch(err){
+
+setError(err.message);
+
+}
+
 }
 
 async function sendMessage(){
-  const text = inputEl.value.trim();
-  if(!text){
-    setError("Type a message first");
-    return;
-  }
 
-  setStatus("Sending...");
-  setError("");
-  sendBtn.disabled = true;
+const text = inputEl.value.trim();
 
-  try{
-    const result = await supabase
-      .from("messages")
-      .insert([{ message: text, room: room }]);
+if(!text) return;
 
-    log("sendMessage returned");
+setStatus("Sending...");
 
-    if(result.error){
-      setError("Send error: " + result.error.message);
-      setStatus("Send failed");
-      sendBtn.disabled = false;
-      return;
-    }
+const { error } = await supabase
+.from("messages")
+.insert([{message:text,room:room}]);
 
-    inputEl.value = "";
-    setStatus("Sent. Reloading...");
-    await loadMessages();
-  }catch(err){
-    setError("Send catch: " + err.message);
-    setStatus("Send crashed");
-  }
-
-  sendBtn.disabled = false;
+if(error){
+setError(error.message);
+return;
 }
+
+inputEl.value="";
+
+loadMessages();
+
+}
+
+sendBtn.onclick = sendMessage;
+reloadBtn.onclick = loadMessages;
+
+let supabase;
 
 async function start(){
-  try{
-    setStatus("Checking Supabase library...");
-    if(!window.supabase || !window.supabase.createClient){
-      setError("Supabase library did not load.");
-      setStatus("Startup failed");
-      return;
-    }
 
-    log("Supabase library loaded");
-    log("URL: " + SUPABASE_URL);
-    log("Key length: " + SUPABASE_KEY.length);
+setStatus("Checking library...");
 
-    setStatus("Creating client...");
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    log("Client created");
+if(!window.supabase){
 
-    await loadMessages();
-  }catch(err){
-    setError("Startup catch: " + err.message);
-    setStatus("Startup crashed");
-  }
+setError("Supabase library failed to load");
+return;
+
 }
 
-sendBtn.addEventListener("click", sendMessage);
-reloadBtn.addEventListener("click", loadMessages);
-inputEl.addEventListener("keydown", function(e){
-  if(e.key === "Enter"){
-    sendMessage();
-  }
-});
+log("Library loaded");
+
+supabase = window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+log("Client created");
+
+loadMessages();
+
+}
 
 start();
+
 </script>
 
 </body>
