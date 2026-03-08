@@ -4,135 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>StreamTalk Random Chat</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 16px;
-      font-family: Arial, sans-serif;
-      background: #0f0f14;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    h1 {
-      margin: 0 0 8px 0;
-      font-size: 38px;
-    }
-
-    .top-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .chat-box,
-    .owner-panel,
-    .log-panel {
-      background: #1c1f2e;
-      border-radius: 16px;
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-height: 280px;
-      max-height: 50vh;
-      overflow-y: auto;
-    }
-
-    textarea {
-      border: none;
-      outline: none;
-      border-radius: 12px;
-      padding: 12px;
-      background: #2a2f45;
-      color: white;
-      resize: none;
-      min-height: 120px;
-      font-size: 16px;
-    }
-
-    button {
-      border: none;
-      border-radius: 12px;
-      padding: 12px 18px;
-      background: linear-gradient(90deg, #7c3aed, #ec4899);
-      color: white;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .message {
-      padding: 6px 10px;
-      border-radius: 12px;
-      margin: 4px 0;
-    }
-
-    .me {
-      background: #7c3aed;
-      color: white;
-    }
-
-    .other {
-      background: #2a2f45;
-      color: white;
-    }
-
-    .system {
-      text-align: center;
-      color: #aaa;
-      margin: 4px 0;
-    }
-
-    #ownerMenu {
-      display: none;
-      background: #1a1d2e;
-      padding: 10px;
-      border-radius: 12px;
-      max-height: 200px;
-      overflow-y: auto;
-      flex-direction: column;
-      gap: 4px;
-      min-height: auto;
-    }
-
-    #liveLogs {
-      display: none;
-      background: #1a1d2e;
-      padding: 8px;
-      border-radius: 12px;
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 12px;
-      color: #cfd3ff;
-      min-height: auto;
-    }
-
-    #logsContent {
-      overflow-y: auto;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>StreamTalk Random Chat</h1>
+  <div class="page">
+    <a class="back-link" href="index.html">← Back to Home</a>
 
-  <div class="top-buttons">
-    <button id="joinRandom">Join Random Chat</button>
-    <button id="ownerMenuBtn">Owner Menu</button>
-  </div>
+    <h1>Random Chat</h1>
+    <p class="subtitle">Talk to strangers in real time.</p>
 
-  <div class="chat-box" id="chatBox"></div>
+    <div class="top-row">
+      <button id="joinRandom" class="main-btn button-reset">Join Random Chat</button>
+      <button id="ownerMenuBtn" class="secondary-btn button-reset">Owner Menu</button>
+    </div>
 
-  <textarea id="chatInput" placeholder="Type your message..."></textarea>
-  <button id="sendBtn">Send</button>
+    <div id="statusText" class="status">Status: Offline</div>
 
-  <div id="ownerMenu" class="owner-panel">
-    <p>Owner Controls</p>
-  </div>
+    <div id="chatBox" class="chat-box"></div>
 
-  <div id="liveLogs" class="log-panel">
-    <div id="logsContent"></div>
+    <textarea id="chatInput" placeholder="Type your message..."></textarea>
+
+    <div class="bottom-row">
+      <button id="sendBtn" class="main-btn button-reset">Send</button>
+      <button id="skipBtn" class="secondary-btn button-reset">Skip</button>
+      <button id="disconnectBtn" class="danger-btn button-reset">Disconnect</button>
+    </div>
+
+    <div id="ownerMenu" class="owner-panel">
+      <h3>Owner Controls</h3>
+      <p>This is a placeholder owner panel for now.</p>
+      <ul>
+        <li>Live moderation tools coming soon</li>
+        <li>User reports coming soon</li>
+        <li>Logs coming soon</li>
+      </ul>
+    </div>
   </div>
 
   <script src="app.js"></script>
